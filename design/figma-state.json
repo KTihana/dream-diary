@@ -1,0 +1,266 @@
+{
+  "fileKey": "uoARmOoe4JxzxpfwVKhcOA",
+  "fileUrl": "https://www.figma.com/design/uoARmOoe4JxzxpfwVKhcOA",
+  "scope": "Two notebook screens and their shared controls",
+  "canvaUrl": "https://canva.link/6c3hzl7rhsxqnbr",
+  "foundation": {
+    "createdNodeIds": [
+      "2:24",
+      "2:25"
+    ],
+    "collections": [
+      "VariableCollectionId:2:2",
+      "VariableCollectionId:2:8"
+    ],
+    "variables": {
+      "color/ivory": "VariableID:2:9",
+      "color/ink": "VariableID:2:10",
+      "color/pencil": "VariableID:2:11",
+      "color/rule": "VariableID:2:12",
+      "color/margin": "VariableID:2:13",
+      "spacing/8": "VariableID:2:14",
+      "spacing/16": "VariableID:2:15",
+      "spacing/24": "VariableID:2:16",
+      "spacing/32": "VariableID:2:17",
+      "spacing/48": "VariableID:2:18"
+    },
+    "styles": {
+      "Title": "S:683f93807c95e9890f43487044835d5be9b76b7c,",
+      "Body": "S:a37c8dc4e9469590e74c9cedc873045303ce0913,",
+      "Annotation": "S:0fb4ddaab0c4812e1dd77f8a794190e65de7424a,",
+      "Label": "S:af4f9d376aa83f12afd775e2ee89b4e4cc436c9d,",
+      "Wordmark": "S:1c193c9e48be7fd11dbac852806bada35095e4e6,"
+    },
+    "frames": [
+      {
+        "id": "2:24",
+        "name": "Notebook / Landscape",
+        "w": 853,
+        "h": 480
+      },
+      {
+        "id": "2:25",
+        "name": "Notebook / Portrait",
+        "w": 480,
+        "h": 853
+      }
+    ],
+    "iconSet": {
+      "id": "2:40",
+      "key": "dee6932fb2a593bf051991ec7b89c17491b63774",
+      "variants": [
+        {
+          "id": "2:41",
+          "name": "Type=Square, Size=XLarge, Width=Wide, State=Enabled"
+        },
+        {
+          "id": "2:42",
+          "name": "Type=Square, Size=XLarge, Width=Wide, State=Hovered"
+        },
+        {
+          "id": "2:43",
+          "name": "Type=Square, Size=XLarge, Width=Wide, State=Focused"
+        },
+        {
+          "id": "2:44",
+          "name": "Type=Square, Size=XLarge, Width=Wide, State=Pressed"
+        },
+        {
+          "id": "2:45",
+          "name": "Type=Square, Size=XLarge, Width=Wide, State=Disabled"
+        },
+        {
+          "id": "2:46",
+          "name": "Type=Square, Size=XLarge, Width=Default, State=Enabled"
+        },
+        {
+          "id": "2:47",
+          "name": "Type=Square, Size=XLarge, Width=Default, State=Hovered"
+        },
+        {
+          "id": "2:48",
+          "name": "Type=Square, Size=XLarge, Width=Default, State=Focused"
+        },
+        {
+          "id": "2:49",
+          "name": "Type=Square, Size=XLarge, Width=Default, State=Pressed"
+        },
+        {
+          "id": "2:50",
+          "name": "Type=Square, Size=XLarge, Width=Default, State=Disabled"
+        }
+      ]
+    }
+  },
+  "composition": {
+    "createdNodeIds": [
+      "4:677",
+      "4:678",
+      "4:679",
+      "4:680",
+      "4:681",
+      "4:682",
+      "4:683",
+      "4:684",
+      "4:685",
+      "4:686",
+      "4:687",
+      "4:688",
+      "4:689",
+      "4:690",
+      "4:691",
+      "4:692",
+      "4:693",
+      "4:694",
+      "4:695",
+      "4:696",
+      "4:697",
+      "4:698",
+      "4:699",
+      "4:700",
+      "4:701",
+      "4:702",
+      "4:703",
+      "4:704",
+      "4:705",
+      "4:706",
+      "4:707",
+      "4:708",
+      "4:709",
+      "4:710",
+      "4:711",
+      "4:712",
+      "4:713",
+      "4:714",
+      "4:722",
+      "4:724",
+      "4:733",
+      "4:734",
+      "4:735",
+      "4:736",
+      "4:737",
+      "4:738",
+      "4:739",
+      "4:740",
+      "4:741",
+      "4:742",
+      "4:748",
+      "4:749",
+      "4:756",
+      "4:757",
+      "4:764",
+      "4:765",
+      "4:766",
+      "4:767",
+      "4:768",
+      "4:769",
+      "4:770",
+      "4:771",
+      "4:772",
+      "4:773",
+      "4:774",
+      "4:775",
+      "4:776",
+      "4:777",
+      "4:778",
+      "4:779",
+      "4:780",
+      "4:781",
+      "4:782",
+      "4:783",
+      "4:784",
+      "4:785",
+      "4:786",
+      "4:787",
+      "4:788",
+      "4:789",
+      "4:790",
+      "4:797",
+      "4:799",
+      "4:808",
+      "4:809",
+      "4:810",
+      "4:811",
+      "4:812",
+      "4:813",
+      "4:814",
+      "4:820",
+      "4:821",
+      "4:828",
+      "4:829"
+    ],
+    "mutatedNodeIds": [
+      "2:24",
+      "2:25"
+    ],
+    "components": {
+      "lucidity": "4:691",
+      "newDream": "4:697",
+      "icons": {
+        "Book": "4:677",
+        "More": "4:680",
+        "Previous": "4:685",
+        "Next": "4:688"
+      }
+    },
+    "screens": [
+      {
+        "id": "2:24",
+        "name": "Notebook / Landscape",
+        "width": 853,
+        "height": 480,
+        "descendants": 60,
+        "counts": {
+          "FRAME": 19,
+          "RECTANGLE": 12,
+          "TEXT": 12,
+          "INSTANCE": 10,
+          "VECTOR": 6,
+          "ELLIPSE": 1
+        },
+        "imageNodes": [],
+        "fonts": [
+          "Lora",
+          "Roboto",
+          "Caveat"
+        ]
+      },
+      {
+        "id": "2:25",
+        "name": "Notebook / Portrait",
+        "width": 480,
+        "height": 853,
+        "descendants": 68,
+        "counts": {
+          "FRAME": 17,
+          "RECTANGLE": 23,
+          "TEXT": 11,
+          "INSTANCE": 10,
+          "VECTOR": 6,
+          "ELLIPSE": 1
+        },
+        "imageNodes": [],
+        "fonts": [
+          "Lora",
+          "Roboto",
+          "Caveat"
+        ]
+      }
+    ]
+  },
+  "validation": {
+    "editable": true,
+    "imageNodes": 0,
+    "fonts": [
+      "Lora",
+      "Roboto",
+      "Caveat"
+    ],
+    "portraitTitleHeight": 92,
+    "finalTitleNodes": [
+      "4:736",
+      "4:811"
+    ]
+  },
+  "portraitRevision": "portrait-revision.json"
+}

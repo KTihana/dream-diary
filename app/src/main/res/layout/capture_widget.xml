@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:background="#FFFDF6">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_name" android:textStyle="italic" android:textSize="22sp" android:textColor="#433B35" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/widget_subtitle" android:textSize="12sp" android:textColor="#8B7F72" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Button android:id="@+id/widget_write" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/widget_write" android:textColor="#433B35" android:backgroundTint="#EEE6D8" />
+        <Button android:id="@+id/widget_voice" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:text="@string/widget_record" android:textColor="#433B35" android:backgroundTint="#EEE6D8" />
+    </LinearLayout>
+</LinearLayout>

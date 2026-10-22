@@ -1,0 +1,24 @@
+.gradle/
+.kotlin/
+.idea/
+**/build/
+local.properties
+*.iml
+.DS_Store
+captures/
+
+
+dist/*.apk
+dist/SHA256SUMS
+
+# Local publication previews
+/GITHUB-README-PREVIEW.md
+/design/github-preview/index.html
+/design/github-preview/readme-preview.jpg
+
+# Local credentials and signing material
+.env
+.env.*
+*.jks
+*.keystore
+key.properties

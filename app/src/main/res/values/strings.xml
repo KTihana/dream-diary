@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dream Diary</string>
+    <string name="widget_label">Dream Diary • quick capture</string>
+    <string name="widget_subtitle">Catch a dream before it fades</string>
+    <string name="widget_write">Write</string>
+    <string name="widget_record">Record</string>
+</resources>

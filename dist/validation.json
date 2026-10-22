@@ -1,0 +1,25 @@
+{
+  "version": "1.4.2",
+  "package": "com.afterglow.diary",
+  "artifact": "Dream-Diary-1.4.2.apk",
+  "sha256": "4b3ed2fa36cab6095a0c70b3f98f14ff54052ecff595f58b11d705b4c2fb7e87",
+  "bytes": 12431542,
+  "build": "signed debug/developer APK",
+  "minimum_android": "8.0 / API 26",
+  "validation": {
+    "jvm_tests": 25,
+    "lint_errors": 0,
+    "targeted_device_flows_passed": 2,
+    "test_device": "Android 16 / API 36 emulator",
+    "flows": [
+      "English recognition results, review/edit and empty-input validation, append without replacing existing title/body, activity recreation",
+      "Croatian explicit hr-HR request, no forced-offline restriction on the default speech service, remembered language across activity recreation, č/ć/đ/š/ž in results and the UTF-8 notebook file"
+    ],
+    "font_glyphs": "čćđšžČĆĐŠŽ verified in lora_regular.ttf, lora_italic.ttf and caveat.ttf cmap tables",
+    "notes": "Device flows use a test-APK-only recognition service with fixed words, not an acoustic model. The service rejects missing/wrong language tags and Croatian requests that force offline recognition. Actual microphone-to-Croatian recognition accuracy and model availability on a physical phone were not tested. The app retries with the same chosen language through the default service if the on-device recognizer reports the language unavailable or unsupported. The prior 1.4.1 audio-recording/playback flow was not repeated because this update does not change the recorder. The test APK and its leftover automatically selected speech-service setting were removed from the development emulator after checks."
+  },
+  "screenshots": [
+    "screenshots/voice-croatian-1.4.2.png",
+    "screenshots/dictation-croatian-1.4.2.png"
+  ]
+}
