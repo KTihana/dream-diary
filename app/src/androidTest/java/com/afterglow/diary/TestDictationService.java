@@ -47,7 +47,12 @@ public class TestDictationService extends RecognitionService {
         levels.removeCallbacksAndMessages(null);
         try {
             listener.endOfSpeech();
-            listener.results(words(croatian ? "Šetala sam uz rijeku i čula šapat. Đurđica je nosila žuti ključ, a noć je bila tiha." : "I was walking through a violet city."));
+            final String result = croatian ? "Šetala sam uz rijeku i čula šapat. Đurđica je nosila žuti ključ, a noć je bila tiha." : "I was walking through a violet city.";
+            // Leave a real finishing window so clearing pending transcription can be exercised.
+            levels.postDelayed(() -> {
+                try { listener.results(words(result)); }
+                catch (RemoteException ignored) { }
+            }, 1200);
         } catch (RemoteException error) { throw new IllegalStateException(error); }
     }
     @Override protected void onCancel(Callback listener) { levels.removeCallbacksAndMessages(null); }

@@ -100,6 +100,17 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
         else message = "That recording was too short to save. Try again."
     }
     fun stopPlayer() { player?.release(); player = null; playing = null }
+    fun eraseDictation() {
+        // Detach first so late partial/final callbacks cannot bring erased words back.
+        val speech = recognizer
+        recognizer = null
+        listening = false; finishing = false
+        speech?.cancel(); speech?.destroy()
+        soundLevels.reset()
+        transcript = ""; partial = ""; reviewing = false
+        languageHelp = false
+        message = "Ready to start again."
+    }
     fun startRecord() {
         stopPlayer(); recognizer?.destroy(); recognizer = null; listening = false; finishing = false
         soundLevels.reset()
@@ -252,7 +263,19 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
             if (listening && !finishing) DictationWaveform(soundLevels, languageName)
             Text("Uses on-device speech when the language is available. Otherwise your Android speech service may need internet access.",
                 Modifier.padding(top = 12.dp), color = Pencil, fontSize = 12.sp, lineHeight = 18.sp)
-            if (message.isNotEmpty() && (!listening || finishing)) Text(message, Modifier.padding(vertical = 16.dp).testTag("voice-status"), color = Pencil)
+            val canErase = transcript.isNotEmpty() || partial.isNotEmpty() || listening || finishing
+            val showMessage = message.isNotEmpty() && (!listening || finishing)
+            if (showMessage || canErase || reviewing) {
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    if (showMessage) Text(message, Modifier.weight(1f).testTag("voice-status"), color = Pencil)
+                    else Spacer(Modifier.weight(1f))
+                    if (canErase || reviewing) TextButton(onClick = ::eraseDictation,
+                        enabled = canErase, modifier = Modifier.heightIn(min = 44.dp).testTag("erase-dictation")) {
+                        Text("Erase all")
+                    }
+                }
+            }
             if (languageHelp) TextButton(onClick = {
                 try { context.startActivity(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)) }
                 catch (_: Exception) { message = "Open Android Settings → voice input and add $languageName to your speech service." }

@@ -1,28 +1,28 @@
 {
-  "version": "1.4.3",
+  "version": "1.4.4",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.4.3.apk",
-  "sha256": "bfc69d90117bc85ddbc43a57348d47ac4bc367a8e9c652152f7f515ad656914b",
+  "artifact": "Dream-Diary-1.4.4.apk",
+  "sha256": "2e478ef512103973d64c5e6af49d16bebb98a23837a1164c95932c7496453ac7",
   "bytes": 12447926,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
     "jvm_tests": 25,
     "lint_errors": 0,
-    "targeted_device_flows_passed": 3,
+    "targeted_device_flows_passed": 4,
     "test_device": "Android 16 / API 36 emulator",
     "flows": [
       "English recognition results, review/edit and empty-input validation, append without replacing existing title/body, activity recreation",
       "Croatian explicit hr-HR request, no forced-offline restriction on the default speech service, remembered language across activity recreation, č/ć/đ/š/ž in results and the UTF-8 notebook file",
-      "Sound meter: microphone-ready state without level callbacks, quiet RMS levels, speech-level activity, reset after rotation and background/foreground, removal after finishing; native portrait and landscape screenshots"
+      "Sound meter: microphone-ready state without level callbacks, quiet RMS levels, speech-level activity, reset after rotation and background/foreground, removal after finishing; native portrait and landscape screenshots",
+      "Erase all during live listening, reviewed draft and pending final transcription; cleared draft stays empty across recreation, immediate restart works, and only newly dictated Croatian words append to the unchanged saved title/body; portrait and landscape action checks"
     ],
     "font_glyphs": "čćđšžČĆĐŠŽ verified in lora_regular.ttf, lora_italic.ttf and caveat.ttf cmap tables",
-    "notes": "Device flows use a test-APK-only recognition service with example words and a timed RMS envelope, not a physical microphone acoustic model. Production feedback uses real recognizer RMS callbacks only, ignores non-finite input, and expires stale levels after 250 ms. A provider without level callbacks shows the ready state without simulated activity. The service rejects missing/wrong language tags and Croatian requests that force offline recognition. Actual microphone-to-Croatian recognition accuracy and model availability on a physical phone were not tested. The prior audio-recording/playback flow was not repeated because this update does not change the recorder. The test APK and its leftover automatically selected speech-service setting were removed from the development emulator after checks."
+    "notes": "Device flows use a test-APK-only recognition service with example words and a timed RMS envelope, not a physical microphone acoustic model. Its final result is delayed to exercise clearing during transcription. Erase all cancels/destroys the current recognizer and detaches it before clearing state so old callbacks cannot restore the draft. The test verifies the existing title/body are unchanged and a restarted Croatian session adds only its new words. Production feedback uses real recognizer RMS callbacks only. The service rejects missing/wrong language tags and Croatian requests that force offline recognition. Physical-phone acoustic accuracy and language-model availability were not tested. The audio recorder was unchanged. The test APK and its leftover automatically selected speech-service setting were removed from the development emulator after checks."
   },
   "screenshots": [
-    "screenshots/dictation-waveform-portrait-1.4.3.png",
-    "screenshots/dictation-waveform-landscape-1.4.3.png",
-    "screenshots/dictation-quiet-1.4.3.png",
-    "screenshots/dictation-croatian-1.4.3.png"
+    "screenshots/dictation-erase-all-portrait-1.4.4.png",
+    "screenshots/dictation-erase-all-landscape-1.4.4.png",
+    "screenshots/dictation-start-again-1.4.4.png"
   ]
 }

@@ -2,9 +2,9 @@
 
 An Android dream journal with pages you can flip. Write, sketch, record voice notes, or dictate in **Croatian or English**. Mark lucid dreams with lavender paper and set reality-check reminders. Saved locally, with no account required.
 
-[![Download & install for Android](design/github-preview/download-android.svg)](https://github.com/KTihana/dream-diary/releases/download/v1.4.3/Dream-Diary-1.4.3.apk)
+[![Download & install for Android](design/github-preview/download-android.svg)](https://github.com/KTihana/dream-diary/releases/download/v1.4.4/Dream-Diary-1.4.4.apk)
 
-**Android 8.0+ · Version 1.4.3 · Developer build**
+**Android 8.0+ · Version 1.4.4 · Developer build**
 
 ## Screenshots
 
