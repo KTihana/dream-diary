@@ -79,6 +79,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
     var recording by remember { mutableStateOf(false) }
     var listening by remember { mutableStateOf(false) }
     var finishing by remember { mutableStateOf(false) }
+    val soundLevels = remember { DictationSoundLevels() }
     var elapsed by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
     var transcript by rememberSaveable { mutableStateOf("") }
@@ -101,6 +102,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
     fun stopPlayer() { player?.release(); player = null; playing = null }
     fun startRecord() {
         stopPlayer(); recognizer?.destroy(); recognizer = null; listening = false; finishing = false
+        soundLevels.reset()
         try { recorder.start(); elapsed = 0; recording = true; message = "" }
         catch (_: Exception) { message = "The microphone couldn’t start. Check that another app isn’t using it, then try again." }
     }
@@ -108,6 +110,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
         if (recording) stopRecording()
         stopPlayer()
         languageHelp = false
+        soundLevels.reset()
         val useOnDevice = preferOnDevice && hasOnDevice
         if (!SpeechRecognizer.isRecognitionAvailable(context) && !useOnDevice) {
             message = "Speech recognition isn’t installed on this device. You can still save an audio recording or type your dream."; return
@@ -118,17 +121,31 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
                 else SpeechRecognizer.createSpeechRecognizer(context)
             recognizer = speech
             speech.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) { if (recognizer === speech) message = "Listening · $languageName…" }
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onReadyForSpeech(params: Bundle?) {
+                    if (recognizer === speech && listening && !finishing) {
+                        soundLevels.ready = true
+                        message = "Listening · $languageName…"
+                    }
+                }
+                override fun onBeginningOfSpeech() {
+                    if (recognizer === speech && listening && !finishing) soundLevels.ready = true
+                }
+                override fun onRmsChanged(rmsdB: Float) {
+                    if (recognizer === speech && listening && !finishing) {
+                        if (rmsdB.isFinite()) soundLevels.ready = true
+                        soundLevels.receive(rmsdB)
+                    }
+                }
                 override fun onBufferReceived(buffer: ByteArray?) {}
                 override fun onEndOfSpeech() {
                     if (recognizer !== speech) return
                     finishing = true; message = "Finishing transcription…"
+                    soundLevels.reset()
                 }
                 override fun onError(error: Int) {
                     if (recognizer !== speech) return
                     listening = false; finishing = false; partial = ""
+                    soundLevels.reset()
                     if (useOnDevice && error in setOf(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
                             SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE, SpeechRecognizer.ERROR_SERVER_DISCONNECTED)) {
                         dictate(preferOnDevice = false)
@@ -147,6 +164,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
                 override fun onResults(results: Bundle?) {
                     if (recognizer !== speech) return
                     listening = false; finishing = false; partial = ""
+                    soundLevels.reset()
                     val words = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty().trim()
                     if (words.isNotBlank()) {
                         transcript += (if (transcript.isBlank()) "" else " ") + words
@@ -167,6 +185,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
                 .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, useOnDevice))
         } catch (_: Exception) {
             recognizer?.destroy(); recognizer = null; listening = false; finishing = false
+            soundLevels.reset()
             if (useOnDevice) { dictate(preferOnDevice = false); return }
             message = "The speech service couldn’t start. Audio recording is still available."
         }
@@ -197,6 +216,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
             if (event == Lifecycle.Event.ON_STOP) {
                 if (recording) stopRecording()
                 recognizer?.destroy(); recognizer = null; listening = false; finishing = false; partial = ""
+                soundLevels.reset()
                 stopPlayer()
             }
         }
@@ -205,6 +225,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
             lifecycle.lifecycle.removeObserver(observer)
             if (recording) stopRecording()
             recognizer?.destroy(); recognizer = null
+            soundLevels.reset()
             stopPlayer()
         }
     }
@@ -221,16 +242,17 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
                 }
             }
             Button(onClick = {
-                if (listening) { finishing = true; message = "Finishing transcription…"; recognizer?.stopListening() }
+                if (listening) { finishing = true; soundLevels.reset(); message = "Finishing transcription…"; recognizer?.stopListening() }
                 else request("dictate")
             }, Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("dictate-dream"), enabled = !recording && !finishing) {
                 Icon(DreamIcons.Microphone, null, Modifier.size(20.dp))
                 Spacer(Modifier.width(9.dp))
                 Text(if (finishing) "Finishing…" else if (listening) "Finish dictation" else if (transcript.isNotBlank()) "Dictate more" else "Start dictation")
             }
+            if (listening && !finishing) DictationWaveform(soundLevels, languageName)
             Text("Uses on-device speech when the language is available. Otherwise your Android speech service may need internet access.",
                 Modifier.padding(top = 12.dp), color = Pencil, fontSize = 12.sp, lineHeight = 18.sp)
-            if (message.isNotEmpty()) Text(message, Modifier.padding(vertical = 16.dp).testTag("voice-status"), color = Pencil)
+            if (message.isNotEmpty() && (!listening || finishing)) Text(message, Modifier.padding(vertical = 16.dp).testTag("voice-status"), color = Pencil)
             if (languageHelp) TextButton(onClick = {
                 try { context.startActivity(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)) }
                 catch (_: Exception) { message = "Open Android Settings → voice input and add $languageName to your speech service." }

@@ -39,7 +39,7 @@ All practice notes are separate from the existing diary file. Every prompt and n
 
 ## Tools in the options menu
 
-- **Record or dictate:** also available from the microphone beside Notebook options. **Start dictation** turns your speech into text. Review or edit the words, dictate more if needed, then tap **Add to dream** to return to your page. The text appends to your dream and keeps your existing writing and title. You can also save microphone audio with the dream, play it back, or remove it after confirmation. Choose **Hrvatski** or **English** above Start dictation. Croatian (`hr-HR`) is the default, and your language choice is remembered. Every request explicitly uses the chosen language even if the phone's language is different. On-device recognition is preferred; if its selected language is unavailable or unsupported, the app retries through the installed Android speech service with the same language and without forcing offline recognition. This service may need internet. If that service also lacks the language, the app shows a language-specific explanation and an **Open speech settings** action. Croatian letters č, ć, đ, š, ž and their capitals are present in all three bundled notebook font files. That service's availability and processing vary by device. Devices without speech recognition can still record and type. Recording stops and saves when you close the panel, rotate, or leave the app; it does not continue in the background. Individual notes are limited to 30 minutes.
+- **Record or dictate:** also available from the microphone beside Notebook options. **Start dictation** turns your speech into text. A compact ink-blue waveform shows sound levels supplied by the speech recognizer. It settles to a flat line during silence and disappears when dictation ends. Providers that do not send level callbacks still show a microphone-ready state, without simulated audio activity. Review or edit the words, dictate more if needed, then tap **Add to dream** to return to your page. The text appends to your dream and keeps your existing writing and title. You can also save microphone audio with the dream, play it back, or remove it after confirmation. Choose **Hrvatski** or **English** above Start dictation. Croatian (`hr-HR`) is the default, and your language choice is remembered. Every request explicitly uses the chosen language even if the phone's language is different. On-device recognition is preferred; if its selected language is unavailable or unsupported, the app retries through the installed Android speech service with the same language and without forcing offline recognition. This service may need internet. If that service also lacks the language, the app shows a language-specific explanation and an **Open speech settings** action. Croatian letters č, ć, đ, š, ž and their capitals are present in all three bundled notebook font files. That service's availability and processing vary by device. Devices without speech recognition can still record and type. Recording stops and saves when you close the panel, rotate, or leave the app; it does not continue in the background. Individual notes are limited to 30 minutes.
 - **Sketch & handwriting:** draw or write with a finger or stylus. Undo strokes or clear the sketch after confirmation. Completed strokes autosave and retain normalized coordinates across screen sizes.
 - **Dream details:** optional comma-separated symbols, people, and places. Lucid dreams also have awareness and control scales (1–5; tap again to unmark), technique/trigger, and estimated lucid minutes.
 - **Bookmark this dream:** find marked dreams in the index.
@@ -53,7 +53,7 @@ The app has no account, cloud sync, app lock, backup, export, or AI feature. Dre
 
 ## Install on your phone
 
-The installable developer build is [Dream Diary 1.4.2](https://github.com/KTihana/dream-diary/releases/download/v1.4.2/Dream-Diary-1.4.2.apk). Transfer the APK to an Android phone running Android 8.0 or newer, open it in Files and tap Install. Android may ask you to allow installation from that Files app. See the [short installation guide](dist/INSTALL.md).
+The installable developer build is [Dream Diary 1.4.3](https://github.com/KTihana/dream-diary/releases/download/v1.4.3/Dream-Diary-1.4.3.apk). Transfer the APK to an Android phone running Android 8.0 or newer, open it in Files and tap Install. Android may ask you to allow installation from that Files app. See the [short installation guide](dist/INSTALL.md).
 
 A new installation starts with a blank notebook. The app remembers your last-opened dream across app restarts, as well as your entries and settings. The APK is signed with this machine's Android development key and updates earlier APKs signed with the same key without deleting their notebooks. It is a developer build for direct installation; store distribution needs production signing.
 
@@ -76,7 +76,9 @@ The packaging task builds the app and copies its signed APK into `dist`. The pac
 ANDROID_SERIAL=your-test-device ./gradlew :app:connectedDebugAndroidTest
 ```
 
-Version 1.4.2 passes all 25 JVM tests and Android lint with zero errors. Two targeted device flows pass for English and Croatian dictation. The Croatian test verifies an explicit `hr-HR` request, that the default speech service is not forced into offline recognition, persisted language choice, review and saving of Croatian diacritics to the actual UTF-8 notebook file. All bundled fonts contain čćđšžČĆĐŠŽ. The recognizer fixture supplies fixed words; actual Croatian acoustic-model accuracy and physical-phone language availability are not tested.
+Version 1.4.3 passes all 25 JVM tests and Android lint with zero errors. Three targeted device flows cover English and Croatian dictation, the no-level-callback ready state, quiet versus speech RMS feedback, rotation and foreground cleanup, and removal of the waveform after finishing. Native screenshots verify the meter in portrait and landscape. The recognizer fixture supplies example words and timed sound levels; this validates app behavior rather than physical-phone acoustic accuracy.
+
+Version 1.4.2 passed all 25 JVM tests and Android lint with zero errors. Two targeted device flows pass for English and Croatian dictation. The Croatian test verifies an explicit `hr-HR` request, that the default speech service is not forced into offline recognition, persisted language choice, review and saving of Croatian diacritics to the actual UTF-8 notebook file. All bundled fonts contain čćđšžČĆĐŠŽ. The recognizer fixture supplies fixed words; actual Croatian acoustic-model accuracy and physical-phone language availability are not tested.
 
 Version 1.4.1 passed all 25 JVM tests and Android lint with zero errors. Two targeted device flows pass: microphone recording/playback with file validation, and dictation through Android’s default speech-service path. The dictation test uses a service in the test APK to supply fixed partial and final results, verifies review/edit/empty-input handling, appends the words without replacing the title or existing text, and checks the result after activity recreation. The test restores the previous speech-service setting. After validation, the test APK and its leftover automatic provider selection were removed from the emulator. This verifies the app’s transcription flow, not the accuracy of an installed acoustic model.
 
@@ -94,7 +96,8 @@ Screenshots use example dreams on a development emulator. New installations open
 
 ![Portrait notebook](screenshots/notebook-portrait-1.4.0.png)
 ![Landscape notebook](screenshots/notebook-landscape-1.4.0.png)
-![Croatian speech-to-text review with example words](screenshots/dictation-croatian-1.4.2.png)
+![Live speech-to-text sound meter with example Croatian input](screenshots/dictation-waveform-portrait-1.4.3.png)
+![Croatian speech-to-text review with example words](screenshots/dictation-croatian-1.4.3.png)
 ![Practice](screenshots/practice-1.3.png)
 ![Reminders](screenshots/reminders-1.3.png)
 ![Tips](screenshots/tips-1.3.png)
@@ -107,7 +110,7 @@ The earlier [Figma screens and Canva direction board](design/README.md) establis
 - `AfterglowApp.kt`: paper drawing, responsive notebook, text measurement/pagination, page-turn animation, menus, and date picker.
 - `PaperRuling.kt`: text-aligned notebook rules, including the editor's scrolling above the keyboard.
 - `FeaturePanels.kt`: index, patterns, personal dictionary, lucid details, sketch canvas, appearance, and recall preferences.
-- `VoicePanel.kt`: microphone recording, playback, live transcription, permission/lifecycle handling.
+- `VoicePanel.kt` / `DictationWaveform.kt`: microphone recording, playback, live transcription with a sound-level envelope, permission/lifecycle handling.
 - `RecallReminder.kt`: daily reminder receiver, capture widget, and Quick Settings tile.
 - `LucidPracticeModels.kt` / `LucidPracticeStore.kt`: versioned practice data, reminder calculations, waking-date outcomes and serialized preference transactions.
 - `LucidPracticePanel.kt` / `LucidPracticeSettings.kt` / `LucidPracticeRoutines.kt`: practice navigation, settings, guides, morning review and history.
@@ -121,4 +124,4 @@ Dreams (including sketch points and audio references) are in `files/dreams.json`
 
 Practice data uses the private `lucid-practice` SharedPreferences file with its own versioned JSON. A process-wide transaction lock prevents notification/service writes from overwriting form edits. Unreadable or newer practice data is retained and shown as an error rather than replaced with an empty history. Recent event detail is limited to 1,000 entries; nightly totals and notes are retained separately.
 
-Build/platform references: [AGP compatibility](https://developer.android.com/build/releases/agp-8-13-0-release-notes), [Compose BOM](https://developer.android.com/develop/ui/compose/bom), [SpeechRecognizer](https://developer.android.com/reference/android/speech/SpeechRecognizer), [AlarmManager](https://developer.android.com/reference/android/app/AlarmManager), [Quick Settings tiles](https://developer.android.com/reference/android/service/quicksettings/TileService).
+Build/platform references: [AGP compatibility](https://developer.android.com/build/releases/agp-8-13-0-release-notes), [Compose BOM](https://developer.android.com/develop/ui/compose/bom), [SpeechRecognizer](https://developer.android.com/reference/android/speech/SpeechRecognizer), [sound-level callbacks](https://developer.android.com/reference/android/speech/RecognitionListener#onRmsChanged(float)), [AlarmManager](https://developer.android.com/reference/android/app/AlarmManager), [Quick Settings tiles](https://developer.android.com/reference/android/service/quicksettings/TileService).

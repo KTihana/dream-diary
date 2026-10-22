@@ -58,6 +58,7 @@ class DictationTest {
         app.onNodeWithTag("dictate-dream").performClick()
         app.waitUntil(15_000) { app.onAllNodesWithTag("dictation-transcript").fetchSemanticsNodes().isNotEmpty() }
         app.onNodeWithTag("dictation-transcript").assertTextContains("I was walking through a violet city.")
+        app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
         app.onNodeWithTag("dictation-transcript").performTextReplacement("")
         app.onNodeWithText("Add to dream").assertIsNotEnabled()
         app.onNodeWithTag("dictation-transcript").performTextReplacement("I walked through a violet city.")
@@ -87,7 +88,7 @@ class DictationTest {
         app.activityRule.scenario.recreate()
         app.onNodeWithTag("dictation-language-hr-HR").assertIsSelected()
         assertEquals("hr-HR", NotebookPreferencesStore(instrumentation.targetContext).load().dictationLanguage)
-        saveScreenshot("voice-croatian-1.4.2.png")
+        saveScreenshot("voice-croatian-1.4.3.png")
         app.onNodeWithTag("dictate-dream").performClick()
         app.waitUntil(30_000) { app.onAllNodesWithText("Šetala sam uz rijeku").fetchSemanticsNodes().isNotEmpty() }
         app.onNodeWithTag("dictation-language-en-US").assertIsNotEnabled()
@@ -95,7 +96,8 @@ class DictationTest {
         val croatian = "Šetala sam uz rijeku i čula šapat. Đurđica je nosila žuti ključ, a noć je bila tiha."
         app.waitUntil(15_000) { app.onAllNodesWithTag("dictation-transcript").fetchSemanticsNodes().isNotEmpty() }
         app.onNodeWithTag("dictation-transcript").assertTextContains(croatian)
-        saveScreenshot("dictation-croatian-1.4.2.png")
+        app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
+        saveScreenshot("dictation-croatian-1.4.3.png")
         app.onNodeWithText("Add to dream").performScrollTo().performClick()
         lateinit var savedModel: DiaryViewModel
         var dreamId = ""
@@ -109,6 +111,54 @@ class DictationTest {
         app.waitUntil(10_000) { savedModel.state.value.saveStatus == SaveStatus.Saved }
         val saved = kotlinx.coroutines.runBlocking { JournalStore(instrumentation.targetContext.filesDir).load() }
         assertEquals(croatian, saved.first { it.id == dreamId }.body)
+    }
+
+    @Test fun soundMeterFollowsSpeechLevelsAndStopsWhenTheAppLeavesTheForeground() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.uiAutomation.grantRuntimePermission(instrumentation.targetContext.packageName, Manifest.permission.RECORD_AUDIO)
+        instrumentation.uiAutomation.grantRuntimePermission(instrumentation.context.packageName, Manifest.permission.RECORD_AUDIO)
+        app.activityRule.scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+        app.waitUntil(15_000) { app.onAllNodesWithTag("dream-title").fetchSemanticsNodes().isNotEmpty() }
+        app.onNodeWithContentDescription("Speak your dream").performClick()
+        app.onNodeWithTag("dictation-language-hr-HR").performClick()
+        app.onNodeWithTag("dictate-dream").performClick()
+        waitForMeter("Speak when you’re ready") // Providers without RMS callbacks still show an honest ready state.
+        waitForMeter("Listening for your voice") // Negative/quiet RMS stays flat.
+        saveScreenshot("dictation-quiet-1.4.3.png")
+        waitForMeter("Sound detected")
+        // Wait for some history, rather than capturing a single first bar.
+        val screenshotAt = android.os.SystemClock.elapsedRealtime() + 2300
+        app.waitUntil(6000) { android.os.SystemClock.elapsedRealtime() >= screenshotAt }
+        waitForMeter("Sound detected")
+        saveScreenshot("dictation-waveform-portrait-1.4.3.png")
+        app.activityRule.scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+        app.waitUntil(15_000) { app.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
+        // Rotation destroys this microphone session. Restarted sessions must have no old levels.
+        app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
+        app.onNodeWithTag("dictate-dream").performClick()
+        waitForMeter("Speak when you’re ready")
+        waitForMeter("Sound detected")
+        val landscapeAt = android.os.SystemClock.elapsedRealtime() + 2300
+        app.waitUntil(6000) { android.os.SystemClock.elapsedRealtime() >= landscapeAt }
+        waitForMeter("Sound detected")
+        app.onNodeWithTag("dictation-waveform").performScrollTo()
+        saveScreenshot("dictation-waveform-landscape-1.4.3.png")
+        app.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        app.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
+        app.onNodeWithTag("record-audio").assertIsEnabled()
+        app.onNodeWithTag("dictate-dream").performScrollTo().performClick()
+        waitForMeter("Speak when you’re ready")
+        app.onNodeWithTag("dictate-dream").performScrollTo().performClick()
+        app.waitUntil(15_000) { app.onAllNodesWithTag("dictation-transcript").fetchSemanticsNodes().isNotEmpty() }
+        app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
+    }
+
+    private fun waitForMeter(status: String) {
+        val meter = hasTestTag("dictation-waveform") and
+            SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, status)
+        app.waitUntil(15_000) { app.onAllNodes(meter).fetchSemanticsNodes().isNotEmpty() }
+        app.onNode(meter).assertIsDisplayed()
     }
 
     private fun saveScreenshot(name: String) {

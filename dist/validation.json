@@ -1,25 +1,28 @@
 {
-  "version": "1.4.2",
+  "version": "1.4.3",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.4.2.apk",
-  "sha256": "4b3ed2fa36cab6095a0c70b3f98f14ff54052ecff595f58b11d705b4c2fb7e87",
-  "bytes": 12431542,
+  "artifact": "Dream-Diary-1.4.3.apk",
+  "sha256": "bfc69d90117bc85ddbc43a57348d47ac4bc367a8e9c652152f7f515ad656914b",
+  "bytes": 12447926,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
     "jvm_tests": 25,
     "lint_errors": 0,
-    "targeted_device_flows_passed": 2,
+    "targeted_device_flows_passed": 3,
     "test_device": "Android 16 / API 36 emulator",
     "flows": [
       "English recognition results, review/edit and empty-input validation, append without replacing existing title/body, activity recreation",
-      "Croatian explicit hr-HR request, no forced-offline restriction on the default speech service, remembered language across activity recreation, č/ć/đ/š/ž in results and the UTF-8 notebook file"
+      "Croatian explicit hr-HR request, no forced-offline restriction on the default speech service, remembered language across activity recreation, č/ć/đ/š/ž in results and the UTF-8 notebook file",
+      "Sound meter: microphone-ready state without level callbacks, quiet RMS levels, speech-level activity, reset after rotation and background/foreground, removal after finishing; native portrait and landscape screenshots"
     ],
     "font_glyphs": "čćđšžČĆĐŠŽ verified in lora_regular.ttf, lora_italic.ttf and caveat.ttf cmap tables",
-    "notes": "Device flows use a test-APK-only recognition service with fixed words, not an acoustic model. The service rejects missing/wrong language tags and Croatian requests that force offline recognition. Actual microphone-to-Croatian recognition accuracy and model availability on a physical phone were not tested. The app retries with the same chosen language through the default service if the on-device recognizer reports the language unavailable or unsupported. The prior 1.4.1 audio-recording/playback flow was not repeated because this update does not change the recorder. The test APK and its leftover automatically selected speech-service setting were removed from the development emulator after checks."
+    "notes": "Device flows use a test-APK-only recognition service with example words and a timed RMS envelope, not a physical microphone acoustic model. Production feedback uses real recognizer RMS callbacks only, ignores non-finite input, and expires stale levels after 250 ms. A provider without level callbacks shows the ready state without simulated activity. The service rejects missing/wrong language tags and Croatian requests that force offline recognition. Actual microphone-to-Croatian recognition accuracy and model availability on a physical phone were not tested. The prior audio-recording/playback flow was not repeated because this update does not change the recorder. The test APK and its leftover automatically selected speech-service setting were removed from the development emulator after checks."
   },
   "screenshots": [
-    "screenshots/voice-croatian-1.4.2.png",
-    "screenshots/dictation-croatian-1.4.2.png"
+    "screenshots/dictation-waveform-portrait-1.4.3.png",
+    "screenshots/dictation-waveform-landscape-1.4.3.png",
+    "screenshots/dictation-quiet-1.4.3.png",
+    "screenshots/dictation-croatian-1.4.3.png"
   ]
 }
