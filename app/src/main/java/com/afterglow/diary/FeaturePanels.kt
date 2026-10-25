@@ -175,7 +175,7 @@ private fun DreamIndexRow(dream: DreamEntry, onOpen: () -> Unit) {
             overflow = TextOverflow.Ellipsis, fontSize = 14.sp, color = Pencil)
         Text(listOfNotNull(when (dream.lucid) { true -> "Lucid"; false -> "Non-lucid"; null -> null },
             if (dream.audio.isNotEmpty()) "${dream.audio.size} recordings" else null,
-            if (dream.strokes.isNotEmpty()) "Sketch" else null).joinToString(" · "),
+            if (dream.hasDrawing) "Sketch" else null).joinToString(" · "),
             Modifier.padding(top = 6.dp), fontSize = 11.sp, color = Pencil)
     }
     HorizontalDivider(color = Hairline)
@@ -183,7 +183,7 @@ private fun DreamIndexRow(dream: DreamEntry, onOpen: () -> Unit) {
 
 @Composable
 private fun ColumnScope.PatternPages(entries: List<DreamEntry>, onPattern: (String) -> Unit) {
-    val written = entries.filter { it.title.isNotBlank() || it.body.isNotBlank() || it.audio.isNotEmpty() || it.strokes.isNotEmpty() }
+    val written = entries.filter { it.title.isNotBlank() || it.body.isNotBlank() || it.audio.isNotEmpty() || it.hasDrawing }
     val known = written.count { it.lucid != null }
     val lucid = written.count { it.lucid == true }
     LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(bottom = 32.dp)) {
@@ -423,48 +423,4 @@ internal fun RecallPanel(settings: NotebookPreferences, onChange: (NotebookPrefe
             }) { Text("Add Quick Settings tile") }
         }
     }
-}
-
-@Composable
-internal fun SketchPanel(entry: DreamEntry, model: DiaryViewModel, onClose: () -> Unit) {
-    var strokes by remember(entry.id) { mutableStateOf(entry.strokes) }
-    var current by remember { mutableStateOf(emptyList<InkPoint>()) }
-    var confirmClear by remember { mutableStateOf(false) }
-    val pen = Ink
-    fun save() { model.setSketch(strokes); onClose() }
-    NotebookPanel("Sketch & handwriting", ::save) {
-        Text("Draw a place, trace a symbol, or write by hand. Saved with this dream.", Modifier.padding(vertical = 16.dp), color = Pencil, fontSize = 13.sp)
-        Row {
-            TextButton(onClick = { strokes = strokes.dropLast(1); model.setSketch(strokes) }, enabled = strokes.isNotEmpty()) { Text("Undo stroke") }
-            TextButton(onClick = { confirmClear = true }, enabled = strokes.isNotEmpty()) { Text("Clear sketch") }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = ::save) { Text("Keep sketch") }
-        }
-        Text("${strokes.size} ${if (strokes.size == 1) "stroke" else "strokes"}", color = Pencil, fontSize = 11.sp)
-        Canvas(Modifier.weight(1f).fillMaxWidth().padding(bottom = 24.dp).border(1.dp, Pencil.copy(alpha = .25f)).testTag("sketch-canvas")
-            .pointerInput(entry.id) {
-                detectDragGestures(onDragStart = { point ->
-                    current = listOf(InkPoint((point.x / size.width).coerceIn(0f, 1f), (point.y / size.height).coerceIn(0f, 1f)))
-                }, onDrag = { change, _ ->
-                    change.consume()
-                    if (current.size < 6000) current = current + InkPoint((change.position.x / size.width).coerceIn(0f, 1f), (change.position.y / size.height).coerceIn(0f, 1f))
-                }, onDragEnd = { strokes = strokes + InkStroke(current); model.setSketch(strokes); current = emptyList() }, onDragCancel = { current = emptyList() })
-            }) {
-            val gap = 32.dp.toPx()
-            var y = gap
-            while (y < size.height) { drawLine(pen.copy(alpha = .08f), Offset(0f, y), Offset(size.width, y), 1f); y += gap }
-            (strokes + InkStroke(current)).forEach { stroke ->
-                if (stroke.points.size == 1) drawCircle(pen, 1.5.dp.toPx(), Offset(stroke.points[0].x * size.width, stroke.points[0].y * size.height))
-                else if (stroke.points.isNotEmpty()) {
-                    val path = Path().apply { stroke.points.forEachIndexed { i, p ->
-                        if (i == 0) moveTo(p.x * size.width, p.y * size.height) else lineTo(p.x * size.width, p.y * size.height)
-                    } }
-                    drawPath(path, pen, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
-                }
-            }
-        }
-    }
-    if (confirmClear) AlertDialog(onDismissRequest = { confirmClear = false }, containerColor = Paper,
-        title = { Text("Clear this sketch?") }, confirmButton = { TextButton(onClick = { strokes = emptyList(); model.setSketch(strokes); confirmClear = false }) { Text("Clear") } },
-        dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Keep") } })
 }

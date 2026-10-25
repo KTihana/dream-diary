@@ -35,7 +35,7 @@ class JournalCodecTest {
 
     @Test fun unknownVersionIsRejectedRatherThanDiscardingDreams() {
         assertThrows(IllegalArgumentException::class.java) {
-            JournalCodec.decode("""{"version":3,"entries":[]}""")
+            JournalCodec.decode("""{"version":4,"entries":[]}""")
         }
     }
 

@@ -97,6 +97,12 @@ class DiaryViewModel(application: Application, private val savedState: SavedStat
             awareness = awareness.coerceIn(0, 5), control = control.coerceIn(0, 5), technique = technique.take(140), lucidMinutes = minutes.take(12))
     }
     fun setSketch(strokes: List<InkStroke>) = update { it.copy(strokes = strokes) }
+    private val drawingEditors = mutableMapOf<String, DrawingEditor>()
+    internal fun drawingEditor(entry: DreamEntry): DrawingEditor = drawingEditors.getOrPut(entry.id) {
+        DrawingEditor(entry.pageDrawings) { drawings ->
+            updateById(entry.id) { it.copy(strokes = emptyList(), drawings = drawings) }
+        }
+    }
     fun addAudio(dreamId: String, clip: AudioClip) = updateById(dreamId) { it.copy(audio = it.audio + clip) }
     fun removeAudio(clip: AudioClip) {
         abandonedAudio += clip.file
@@ -144,6 +150,7 @@ class DiaryViewModel(application: Application, private val savedState: SavedStat
     fun deleteCurrent() {
         val current = mutableState.value
         val selected = current.current ?: return
+        drawingEditors.remove(selected.id)
         abandonedAudio.addAll(selected.audio.map { it.file })
         val remaining = current.entries.filterNot { it.id == selected.id }.ifEmpty { listOf(DreamEntry()) }
         val nextId = remaining[current.index.coerceAtMost(remaining.lastIndex)].id

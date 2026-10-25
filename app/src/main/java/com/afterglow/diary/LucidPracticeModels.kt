@@ -154,7 +154,7 @@ fun trainedForCue(data: LucidPracticeData, cue: LucidCue, now: Long = System.cur
 
 /** An unrecalled or unanswered night stays unknown. A lucid dream report establishes a lucid night. */
 fun nightLucidity(night: PracticeNight, entries: List<DreamEntry>): Boolean? {
-    val dreams = entries.filter { it.date == night.date && (it.body.isNotBlank() || it.title.isNotBlank() || it.audio.isNotEmpty() || it.strokes.isNotEmpty()) }
+    val dreams = entries.filter { it.date == night.date && (it.body.isNotBlank() || it.title.isNotBlank() || it.audio.isNotEmpty() || it.hasDrawing) }
     if (dreams.any { it.lucid == true }) return true
     if (night.recall == DreamRecall.NoRecall) return null
     return night.lucid ?: if (dreams.isNotEmpty() && dreams.all { it.lucid == false }) false else null

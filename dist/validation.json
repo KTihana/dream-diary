@@ -1,28 +1,38 @@
 {
-  "version": "1.4.4",
+  "version": "1.5.0",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.4.4.apk",
-  "sha256": "2e478ef512103973d64c5e6af49d16bebb98a23837a1164c95932c7496453ac7",
-  "bytes": 12447926,
+  "artifact": "Dream-Diary-1.5.0.apk",
+  "sha256": "5279715d8d9a4084cf159ef7fb6439d3aefacd403d398f7f80b4a8c668694633",
+  "bytes": 13213108,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
-    "jvm_tests": 25,
+    "jvm_tests": 30,
     "lint_errors": 0,
-    "targeted_device_flows_passed": 4,
-    "test_device": "Android 16 / API 36 emulator",
-    "flows": [
-      "English recognition results, review/edit and empty-input validation, append without replacing existing title/body, activity recreation",
-      "Croatian explicit hr-HR request, no forced-offline restriction on the default speech service, remembered language across activity recreation, č/ć/đ/š/ž in results and the UTF-8 notebook file",
-      "Sound meter: microphone-ready state without level callbacks, quiet RMS levels, speech-level activity, reset after rotation and background/foreground, removal after finishing; native portrait and landscape screenshots",
-      "Erase all during live listening, reviewed draft and pending final transcription; cleared draft stays empty across recreation, immediate restart works, and only newly dictated Croatian words append to the unchanged saved title/body; portrait and landscape action checks"
+    "targeted_device_flows_passed": 11,
+    "test_device": "Android 16 / API 36 emulator, 1080 × 2400",
+    "tests": [
+      "com.afterglow.diary.DictationTest#croatianLanguageIsRememberedAndDiacriticsReachTheSavedDream",
+      "com.afterglow.diary.DictationTest#eraseAllDiscardsLiveReviewedAndPendingWordsWhileKeepingTheSavedDream",
+      "com.afterglow.diary.DictationTest#microphoneDictationCanBeReviewedEditedAndAddedWithoutReplacingTheDream",
+      "com.afterglow.diary.DictationTest#segmentedRecognitionKeepsBothPhrasesAndStopsOnlyOnFinish",
+      "com.afterglow.diary.DictationTest#shortProviderEndpointsAndSilentTimeoutsKeepTheTakeOpenUntilFinish",
+      "com.afterglow.diary.DictationTest#soundMeterFollowsSpeechLevelsAndStopsWhenTheAppLeavesTheForeground",
+      "com.afterglow.diary.NotebookFeaturesTest#automaticSheetsKeepAllTextInOrder",
+      "com.afterglow.diary.NotebookFeaturesTest#searchDictionaryBookmarksContinuationAndSketchSurviveRecreation",
+      "com.afterglow.diary.NotebookUiTest#editingLucidityNewPagesAndRotationKeepTheNotebookIntact",
+      "com.afterglow.diary.PageDrawingTest#drawEraseTransformAndSaveOnTheActualDiaryPage",
+      "com.afterglow.diary.PaperAlignmentTest#titleAndWritingStayBetweenRulesAcrossFontsSizesAndRotation"
     ],
-    "font_glyphs": "čćđšžČĆĐŠŽ verified in lora_regular.ttf, lora_italic.ttf and caveat.ttf cmap tables",
-    "notes": "Device flows use a test-APK-only recognition service with example words and a timed RMS envelope, not a physical microphone acoustic model. Its final result is delayed to exercise clearing during transcription. Erase all cancels/destroys the current recognizer and detaches it before clearing state so old callbacks cannot restore the draft. The test verifies the existing title/body are unchanged and a restarted Croatian session adds only its new words. Production feedback uses real recognizer RMS callbacks only. The service rejects missing/wrong language tags and Croatian requests that force offline recognition. Physical-phone acoustic accuracy and language-model availability were not tested. The audio recorder was unchanged. The test APK and its leftover automatically selected speech-service setting were removed from the development emulator after checks."
+    "upgrade": "Installed over 1.4.4; an earlier title, Croatian text, and legacy sketch remained intact after saving the notebook in format 3.",
+    "notes": "Speech fixtures live only in the test APK. They supply English/Croatian words, RMS levels, short phrase endings, silent timeouts, and continuous segments. Tests verify automatic continuation, exact accumulated words, manual finish without restart, erase-all including pending results, lifecycle cleanup, and sound feedback in both orientations. Physical-phone acoustic accuracy and provider availability were not tested. Drawing checks use real page touch gestures, rendered pixel comparisons for erasing, colors and thickness, undo/redo, movement, size/rotation/opacity controls, transparency, placement behind text, disk persistence and activity recreation. Existing notebook/pagination/alignment flows also pass. All six voice flows were rechecked after the voice-only fixes; the ready-state fixture window was lengthened for the final waveform recheck. Test APK and temporary provider selection were removed after checks."
   },
   "screenshots": [
-    "screenshots/dictation-erase-all-portrait-1.4.4.png",
-    "screenshots/dictation-erase-all-landscape-1.4.4.png",
-    "screenshots/dictation-start-again-1.4.4.png"
+    "screenshots/blank-notebook-1.5.0.png",
+    "screenshots/drawing-tools-portrait-1.5.0.png",
+    "screenshots/drawing-in-diary-1.5.0.png",
+    "screenshots/drawing-tools-landscape-1.5.0.png",
+    "screenshots/dictation-through-pauses-1.5.0.png",
+    "screenshots/dictation-waveform-landscape-1.5.0.png"
   ]
 }

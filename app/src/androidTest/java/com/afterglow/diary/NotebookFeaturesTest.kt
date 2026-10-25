@@ -74,21 +74,17 @@ class NotebookFeaturesTest {
         app.onNodeWithTag("dream-body").assertTextEquals("A little paper ship sailed through the blue door.")
         app.onNodeWithContentDescription("Next page").performClick()
         app.onNodeWithTag("dream-body").assertTextEquals("The second sheet is still the same dream.")
-        option("Sketch & handwriting")
-        app.onNodeWithTag("sketch-canvas").performTouchInput { swipe(centerLeft, centerRight, 400) }
-        app.onNodeWithText("1 stroke").assertExists()
-        app.onNodeWithText("Keep sketch").performClick()
+        app.onNodeWithTag("draw-mode").performClick()
+        app.onNodeWithTag("page-drawing-canvas").performTouchInput { swipe(centerLeft, centerRight, 400) }
+        app.onNodeWithTag("write-mode").performClick()
         app.activityRule.scenario.recreate()
         ready()
-        option("Sketch & handwriting")
-        app.onNodeWithText("1 stroke").assertExists()
-        app.onNodeWithText("Keep sketch").performClick()
         app.activityRule.scenario.onActivity {
             val current = ViewModelProvider(it)[DiaryViewModel::class.java].state.value.current!!
             assertTrue(current.bookmarked)
             assertEquals(listOf("river", "door"), current.symbols)
             assertEquals("A little paper ship sailed through the blue door.\u000CThe second sheet is still the same dream.", current.body)
-            assertEquals(1, current.strokes.size)
+            assertEquals(1, current.drawings.single().strokes.size)
         }
     }
 

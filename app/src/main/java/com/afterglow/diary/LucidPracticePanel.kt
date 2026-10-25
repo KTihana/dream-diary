@@ -279,7 +279,7 @@ internal fun LucidPracticePanel(state: DiaryState, model: DiaryViewModel, initia
     val answers = completedNights.map { nightLucidity(it, entries) }
     val known = answers.count { it != null }
     val datedReports = entries.filter { entry -> completedNights.any { it.date == entry.date } &&
-        (entry.title.isNotBlank() || entry.body.isNotBlank() || entry.audio.isNotEmpty() || entry.strokes.isNotEmpty()) }
+        (entry.title.isNotBlank() || entry.body.isNotBlank() || entry.audio.isNotEmpty() || entry.hasDrawing) }
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 32.dp).testTag("practice-history")) {
         PageHeading("Practice history")
         Text("${answers.count { it == true }} lucid nights / $known answered nights", color = Ink, fontFamily = DiarySerif, fontSize = 22.sp)

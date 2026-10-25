@@ -17,6 +17,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +34,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /** Audio stays in private storage. No recording continues in the background. */
 internal class DreamAudioRecorder(private val context: Context) {
@@ -80,12 +84,21 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
     var listening by remember { mutableStateOf(false) }
     var finishing by remember { mutableStateOf(false) }
     val soundLevels = remember { DictationSoundLevels() }
+    val speechScope = rememberCoroutineScope()
+    val dictationControls = remember { BringIntoViewRequester() }
+    var keepListening by remember { mutableStateOf(false) }
+    var betweenPhrases by remember { mutableStateOf(false) }
+    var recognizingPhrase by remember { mutableStateOf(false) }
+    var phraseTimeout by remember { mutableStateOf<Job?>(null) }
+    var nextPhrase by remember { mutableStateOf<Job?>(null) }
+    var finishTimeout by remember { mutableStateOf<Job?>(null) }
     var elapsed by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
     var transcript by rememberSaveable { mutableStateOf("") }
     var reviewing by rememberSaveable { mutableStateOf(false) }
     var partial by remember { mutableStateOf("") }
     var recognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+    var speechGeneration by remember { mutableLongStateOf(0L) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var playing by remember { mutableStateOf<String?>(null) }
     var pendingPermission by remember { mutableStateOf("record") }
@@ -100,68 +113,152 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
         else message = "That recording was too short to save. Try again."
     }
     fun stopPlayer() { player?.release(); player = null; playing = null }
-    fun eraseDictation() {
-        // Detach first so late partial/final callbacks cannot bring erased words back.
-        val speech = recognizer
-        recognizer = null
-        listening = false; finishing = false
+    fun stopDictation() {
+        speechGeneration++
+        keepListening = false; betweenPhrases = false; recognizingPhrase = false
+        phraseTimeout?.cancel(); phraseTimeout = null
+        nextPhrase?.cancel(); nextPhrase = null
+        finishTimeout?.cancel(); finishTimeout = null
+        val speech = recognizer; recognizer = null
         speech?.cancel(); speech?.destroy()
+        listening = false; finishing = false
         soundLevels.reset()
+    }
+    fun finishDictation() {
+        keepListening = false
+        nextPhrase?.cancel(); nextPhrase = null
+        if (betweenPhrases || recognizer == null) {
+            stopDictation(); partial = ""
+            message = if (transcript.isBlank()) "No words were caught. Try again when you’re ready." else "Review your words, or dictate a little more."
+        } else {
+            finishing = true; soundLevels.reset(); message = "Finishing transcription…"
+            if (!recognizingPhrase) recognizer?.stopListening()
+            finishTimeout?.cancel()
+            finishTimeout = speechScope.launch {
+                delay(8000)
+                if (finishing) {
+                    val keptPreview = partial.isNotBlank()
+                    if (keptPreview) {
+                        transcript += (if (transcript.isBlank()) "" else " ") + partial.trim()
+                        reviewing = true
+                    }
+                    stopDictation(); partial = ""
+                    message = if (keptPreview) "Review your words. The last phrase was kept from the live preview."
+                        else if (transcript.isBlank()) "No words were caught. Try again when you’re ready."
+                        else "Review your words, or dictate a little more."
+                }
+            }
+        }
+    }
+    fun eraseDictation() {
+        // Invalidate the entire take, including scheduled restarts and late recognition results.
+        stopDictation()
         transcript = ""; partial = ""; reviewing = false
         languageHelp = false
         message = "Ready to start again."
     }
     fun startRecord() {
-        stopPlayer(); recognizer?.destroy(); recognizer = null; listening = false; finishing = false
-        soundLevels.reset()
+        stopPlayer(); stopDictation()
         try { recorder.start(); elapsed = 0; recording = true; message = "" }
         catch (_: Exception) { message = "The microphone couldn’t start. Check that another app isn’t using it, then try again." }
     }
-    fun dictate(preferOnDevice: Boolean = true) {
+    fun dictate(preferOnDevice: Boolean = true, continuing: Boolean = false, allowSegments: Boolean = true, reusable: SpeechRecognizer? = null) {
         if (recording) stopRecording()
         stopPlayer()
         languageHelp = false
+        if (!continuing) { keepListening = true; finishTimeout?.cancel() }
+        betweenPhrases = false; recognizingPhrase = false
+        phraseTimeout?.cancel()
         soundLevels.reset()
         val useOnDevice = preferOnDevice && hasOnDevice
         if (!SpeechRecognizer.isRecognitionAvailable(context) && !useOnDevice) {
+            stopDictation()
             message = "Speech recognition isn’t installed on this device. You can still save an audio recording or type your dream."; return
         }
-        recognizer?.destroy()
+        val existing = reusable?.takeIf { it === recognizer }
+        val generation = ++speechGeneration
+        if (existing == null) { val old = recognizer; recognizer = null; old?.destroy() }
         try {
-            val speech = if (useOnDevice && Build.VERSION.SDK_INT >= 31) SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+            // Reuse the provider connection after terminal results/errors. Rebinding every phrase
+            // can trigger connection limits or disconnect races in Android's speech broker.
+            val speech = existing ?: if (useOnDevice && Build.VERSION.SDK_INT >= 31) SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
                 else SpeechRecognizer.createSpeechRecognizer(context)
             recognizer = speech
+            fun isCurrent() = recognizer === speech && speechGeneration == generation
+            var segmented = false
+            fun appendWords(words: String) {
+                if (words.isNotBlank()) {
+                    transcript += (if (transcript.isBlank()) "" else " ") + words.trim()
+                    reviewing = true
+                }
+                partial = ""
+            }
+            fun continueOrFinish(retryDelay: Long = 180, reuseRecognizer: Boolean = true) {
+                phraseTimeout?.cancel(); recognizingPhrase = false
+                soundLevels.reset()
+                if (keepListening) {
+                    betweenPhrases = true
+                    nextPhrase?.cancel()
+                    nextPhrase = speechScope.launch {
+                        delay(retryDelay)
+                        if (keepListening && isCurrent()) dictate(preferOnDevice = useOnDevice, continuing = true, allowSegments = allowSegments, reusable = if (reuseRecognizer) speech else null)
+                    }
+                } else {
+                    stopDictation()
+                    message = if (transcript.isBlank()) "No words were caught. Try again when you’re ready." else "Review your words, or dictate a little more."
+                }
+            }
             speech.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
-                    if (recognizer === speech && listening && !finishing) {
+                    if (isCurrent() && listening && !finishing) {
                         soundLevels.ready = true
                         message = "Listening · $languageName…"
                     }
                 }
                 override fun onBeginningOfSpeech() {
-                    if (recognizer === speech && listening && !finishing) soundLevels.ready = true
+                    if (isCurrent() && listening && !finishing) soundLevels.ready = true
                 }
                 override fun onRmsChanged(rmsdB: Float) {
-                    if (recognizer === speech && listening && !finishing) {
+                    if (isCurrent() && listening && !finishing) {
                         if (rmsdB.isFinite()) soundLevels.ready = true
                         soundLevels.receive(rmsdB)
                     }
                 }
                 override fun onBufferReceived(buffer: ByteArray?) {}
                 override fun onEndOfSpeech() {
-                    if (recognizer !== speech) return
-                    finishing = true; message = "Finishing transcription…"
+                    if (!isCurrent()) return
+                    // A provider ending one phrase does not end the user's take.
                     soundLevels.reset()
+                    recognizingPhrase = true
+                    phraseTimeout?.cancel()
+                    if (keepListening) phraseTimeout = speechScope.launch {
+                        delay(8000)
+                        if (isCurrent() && keepListening && recognizingPhrase) {
+                            appendWords(partial)
+                            continueOrFinish(reuseRecognizer = false)
+                        }
+                    }
+                    if (!keepListening) { finishing = true; message = "Finishing transcription…" }
                 }
                 override fun onError(error: Int) {
-                    if (recognizer !== speech) return
-                    listening = false; finishing = false; partial = ""
-                    soundLevels.reset()
-                    if (useOnDevice && error in setOf(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
+                    if (!isCurrent()) return
+                    android.util.Log.w("DreamDictation", "Speech provider error: $error")
+                    if (useOnDevice && keepListening && error in setOf(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
                             SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE, SpeechRecognizer.ERROR_SERVER_DISCONNECTED)) {
-                        dictate(preferOnDevice = false)
+                        dictate(preferOnDevice = false, continuing = true, allowSegments = allowSegments)
                         return
                     }
+                    if (keepListening && allowSegments && Build.VERSION.SDK_INT >= 33 && error == SpeechRecognizer.ERROR_CLIENT) {
+                        dictate(preferOnDevice = useOnDevice, continuing = true, allowSegments = false, reusable = speech)
+                        return
+                    }
+                    if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                        appendWords(partial)
+                        continueOrFinish(retryDelay = 650)
+                        return
+                    }
+                    appendWords(partial)
+                    stopDictation()
                     languageHelp = error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE
                     message = when (error) {
                         SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No words were caught. Try again when you’re ready."
@@ -173,31 +270,40 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
                     }
                 }
                 override fun onResults(results: Bundle?) {
-                    if (recognizer !== speech) return
-                    listening = false; finishing = false; partial = ""
-                    soundLevels.reset()
-                    val words = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty().trim()
-                    if (words.isNotBlank()) {
-                        transcript += (if (transcript.isBlank()) "" else " ") + words
-                        reviewing = true
-                    }
-                    message = if (words.isBlank()) "No words were caught. Try again when you’re ready." else "Review your words, or dictate a little more."
+                    if (!isCurrent()) return
+                    if (!segmented) appendWords(results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty().ifBlank { partial })
+                    else appendWords(partial)
+                    continueOrFinish()
+                }
+                override fun onSegmentResults(segmentResults: Bundle) {
+                    if (!isCurrent()) return
+                    segmented = true
+                    phraseTimeout?.cancel(); recognizingPhrase = false
+                    appendWords(segmentResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty())
+                    soundLevels.ready = true
+                }
+                override fun onEndOfSegmentedSession() {
+                    if (isCurrent()) { appendWords(partial); continueOrFinish() }
                 }
                 override fun onPartialResults(results: Bundle?) {
-                    if (recognizer === speech) partial = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                    if (isCurrent()) partial = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
                 }
                 override fun onEvent(eventType: Int, params: Bundle?) {}
             })
             listening = true; finishing = false; partial = ""; message = "Listening · $languageName…"
-            speech.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            val request = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
                 .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, useOnDevice))
+                .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, useOnDevice)
+                .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
+                .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
+            if (Build.VERSION.SDK_INT >= 33 && allowSegments) request.putExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION,
+                RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS)
+            speech.startListening(request)
         } catch (_: Exception) {
-            recognizer?.destroy(); recognizer = null; listening = false; finishing = false
-            soundLevels.reset()
-            if (useOnDevice) { dictate(preferOnDevice = false); return }
+            if (useOnDevice && keepListening) { dictate(preferOnDevice = false, continuing = true, allowSegments = allowSegments); return }
+            stopDictation()
             message = "The speech service couldn’t start. Audio recording is still available."
         }
     }
@@ -212,6 +318,13 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
         } else permission.launch(Manifest.permission.RECORD_AUDIO)
     }
     LaunchedEffect(autoRecord) { if (autoRecord && !autoStarted) { autoStarted = true; request("record") } }
+    LaunchedEffect(listening) {
+        if (listening) {
+            // Keep Finish and the sound meter together in view on short landscape screens.
+            withFrameNanos { }
+            dictationControls.bringIntoView()
+        }
+    }
     LaunchedEffect(recording) {
         if (recording) {
             val start = SystemClock.elapsedRealtime()
@@ -226,8 +339,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 if (recording) stopRecording()
-                recognizer?.destroy(); recognizer = null; listening = false; finishing = false; partial = ""
-                soundLevels.reset()
+                stopDictation(); partial = ""
                 stopPlayer()
             }
         }
@@ -235,8 +347,7 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
         onDispose {
             lifecycle.lifecycle.removeObserver(observer)
             if (recording) stopRecording()
-            recognizer?.destroy(); recognizer = null
-            soundLevels.reset()
+            stopDictation()
             stopPlayer()
         }
     }
@@ -252,15 +363,19 @@ internal fun VoicePanel(entry: DreamEntry, model: DiaryViewModel, onClose: () ->
                         modifier = Modifier.heightIn(min = 44.dp).testTag("dictation-language-$tag"))
                 }
             }
+            Column(Modifier.bringIntoViewRequester(dictationControls)) {
             Button(onClick = {
-                if (listening) { finishing = true; soundLevels.reset(); message = "Finishing transcription…"; recognizer?.stopListening() }
+                if (listening) finishDictation()
                 else request("dictate")
             }, Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("dictate-dream"), enabled = !recording && !finishing) {
                 Icon(DreamIcons.Microphone, null, Modifier.size(20.dp))
                 Spacer(Modifier.width(9.dp))
                 Text(if (finishing) "Finishing…" else if (listening) "Finish dictation" else if (transcript.isNotBlank()) "Dictate more" else "Start dictation")
             }
-            if (listening && !finishing) DictationWaveform(soundLevels, languageName)
+            if (listening && !finishing) DictationWaveform(soundLevels, languageName, recognizingPhrase || betweenPhrases)
+            }
+            if (listening && !finishing) Text("Take your time. Tap Finish dictation when you’re done.",
+                Modifier.padding(top = 10.dp).testTag("dictation-manual-finish"), color = Pencil, fontSize = 13.sp)
             Text("Uses on-device speech when the language is available. Otherwise your Android speech service may need internet access.",
                 Modifier.padding(top = 12.dp), color = Pencil, fontSize = 12.sp, lineHeight = 18.sp)
             val canErase = transcript.isNotEmpty() || partial.isNotEmpty() || listening || finishing

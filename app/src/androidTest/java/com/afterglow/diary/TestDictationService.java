@@ -40,7 +40,7 @@ public class TestDictationService extends RecognitionService {
                         levels.postDelayed(this, 70);
                     } catch (RemoteException ignored) { levels.removeCallbacksAndMessages(null); }
                 }
-            }, 1200);
+            }, 4000);
         } catch (RemoteException error) { throw new IllegalStateException(error); }
     }
     @Override protected void onStopListening(Callback listener) {

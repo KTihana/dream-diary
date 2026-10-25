@@ -59,9 +59,10 @@ internal class DictationSoundLevels {
 }
 
 @Composable
-internal fun DictationWaveform(levels: DictationSoundLevels, languageName: String) {
+internal fun DictationWaveform(levels: DictationSoundLevels, languageName: String, betweenPhrases: Boolean = false) {
     val accent = Accent
     val status = when {
+        betweenPhrases -> "Saving this phrase, then listening again"
         !levels.ready -> "Preparing microphone"
         levels.soundDetected -> "Sound detected"
         levels.hasLevels -> "Listening for your voice"
@@ -83,7 +84,7 @@ internal fun DictationWaveform(levels: DictationSoundLevels, languageName: Strin
         .padding(horizontal = 16.dp, vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.size(6.dp).background(if (levels.ready) accent else Pencil, CircleShape))
-            Text(if (levels.ready) "Listening · $languageName" else "Preparing microphone…",
+            Text(if (betweenPhrases) "Dictation is still open" else if (levels.ready) "Listening · $languageName" else "Preparing microphone…",
                 fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Ink)
         }
         Canvas(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 8.dp).height(38.dp)) {

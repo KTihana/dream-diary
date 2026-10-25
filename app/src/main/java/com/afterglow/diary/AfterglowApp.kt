@@ -164,6 +164,9 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
     val angle = remember { Animatable(0f) }
     var turn by remember { mutableStateOf<PageTurn?>(null) }
     var editing by remember { mutableStateOf(false) }
+    var drawingMode by rememberSaveable(entry.id) { mutableStateOf(false) }
+    val drawingEditor = remember(entry.id) { model.drawingEditor(entry) }
+    androidx.activity.compose.BackHandler(enabled = drawingMode) { drawingMode = false; drawingEditor.preview = null }
     var showContents by rememberSaveable { mutableStateOf(false) }
     var showDate by rememberSaveable { mutableStateOf(false) }
     var showDelete by rememberSaveable { mutableStateOf(false) }
@@ -180,6 +183,8 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
     val hasNext = writingPage < writingPages - 1 || state.index < state.entries.lastIndex
     fun openPanel(name: String) {
         focus.clearFocus(); autoRecord = false
+        if (name == "sketch") { drawingMode = true; drawingEditor.expanded = true; panel = null; return }
+        drawingMode = false
         if (name == "practice") { practiceRoute = "home"; practiceDate = null; practiceLaunch++ }
         panel = name
     }
@@ -197,7 +202,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
         if (captureRequest != null) {
             panel = null
             showContents = false
-            if (entry.title.isNotBlank() || entry.body.isNotBlank() || entry.audio.isNotEmpty() || entry.strokes.isNotEmpty()) model.addDream()
+            if (entry.title.isNotBlank() || entry.body.isNotBlank() || entry.audio.isNotEmpty() || entry.hasDrawing) model.addDream()
             if (captureRequest == "voice") { autoRecord = true; panel = "voice" }
             onCaptureConsumed()
         }
@@ -250,6 +255,9 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                 if (editing) IconButton(onClick = { focus.clearFocus() }) {
                     Icon(Icons.Outlined.Check, "Done writing", tint = Accent, modifier = Modifier.size(21.dp))
                 }
+                IconButton(onClick = { focus.clearFocus(); drawingMode = false; model.addDream() }, enabled = turn == null) {
+                    Icon(Icons.Outlined.Add, "A new dream", tint = Pencil, modifier = Modifier.size(22.dp))
+                }
                 IconButton(onClick = { openPanel("voice") }) {
                     Icon(DreamIcons.Microphone, "Speak your dream", tint = Pencil, modifier = Modifier.size(21.dp))
                 }
@@ -269,8 +277,8 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 Box(
                     Modifier.fillMaxSize().testTag(if (spread) "notebook-spread" else "notebook-portrait")
-                        .pointerInput(entry.id, editing, turn != null) {
-                            if (!editing && turn == null) {
+                        .pointerInput(entry.id, editing, drawingMode, turn != null) {
+                            if (!editing && !drawingMode && turn == null) {
                                 var distance = 0f
                                 detectHorizontalDragGestures(
                                     onDragStart = { distance = 0f },
@@ -283,7 +291,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                     Row(Modifier.fillMaxSize()) {
                         if (spread) {
                             TitlePage(entry, state.index, model::editTitle, { showDate = true },
-                                { editing = it }, Modifier.weight(1f).fillMaxHeight().testTag("left-leaf"))
+                                { editing = it }, Modifier.weight(1f).fillMaxHeight().testTag("left-leaf"), readOnly = drawingMode)
                         }
                         WritingPage(
                             entry = entry, index = state.index, showTitle = !spread,
@@ -291,7 +299,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                             onLucid = model::setLucid, onDate = { showDate = true },
                             onFocus = { editing = it }, onDone = { focus.clearFocus() },
                             onNext = if (hasNext && turn == null) ({ flip(1) }) else null,
-                            pageIndex = writingPage,
+                            pageIndex = writingPage, drawings = drawingEditor.visibleLayers, drawingEditor = drawingEditor, drawingActive = drawingMode,
                             onPageRequest = { writingPage = it }, onPageCount = { count ->
                                 writingPages = count
                                 if (openLastSheet) { writingPage = count - 1; openLastSheet = false }
@@ -331,6 +339,9 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                     }
 
                 }
+                if (drawingMode && turn == null) Box(Modifier.align(if (spread) Alignment.BottomStart else Alignment.BottomEnd).fillMaxWidth(if (spread) .5f else 1f).padding(horizontal = 10.dp, vertical = 4.dp)) {
+                    DrawingToolbar(drawingEditor, writingPage, onDone = { drawingMode = false; drawingEditor.preview = null })
+                }
             }
             Column(Modifier.fillMaxWidth().offset { IntOffset(0, -keyboardBottom) }
                 .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout).only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
@@ -356,26 +367,25 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                 @Composable fun JournalDock(modifier: Modifier = Modifier) {
                     Surface(modifier, color = ControlPaper, shape = RoundedCornerShape(30.dp),
                         border = androidx.compose.foundation.BorderStroke(.5.dp, Hairline), shadowElevation = 2.dp) {
-                        Row(Modifier.padding(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = { focus.clearFocus(); showContents = true }, contentPadding = PaddingValues(horizontal = 14.dp)) {
-                                Icon(DreamIcons.Book, "All dreams", Modifier.size(19.dp), tint = Ink)
-                                Spacer(Modifier.width(7.dp)); Text("Dreams", color = Ink, fontSize = 13.sp)
+                        Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            @Composable fun DockItem(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, selected: Boolean, tag: String, action: () -> Unit) {
+                                Column(Modifier.weight(1f).heightIn(min = 52.dp).clip(RoundedCornerShape(22.dp))
+                                    .background(if (selected) AccentWash else Color.Transparent).clickable(onClick = action)
+                                    .padding(vertical = 6.dp).testTag(tag), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(icon, if (label == "Dreams") "All dreams" else label, Modifier.size(20.dp), tint = if (selected) Accent else Pencil)
+                                    Text(label, fontSize = 11.sp, color = if (selected) Accent else Pencil)
+                                }
                             }
-                            TextButton(onClick = { openPanel("practice") }, contentPadding = PaddingValues(horizontal = 14.dp)) {
-                                Icon(DreamIcons.Moon, null, Modifier.size(19.dp), tint = Pencil)
-                                Spacer(Modifier.width(7.dp)); Text("Practice", color = Pencil, fontSize = 13.sp)
-                            }
-                            Spacer(Modifier.weight(1f))
-                            FilledIconButton(onClick = { focus.clearFocus(); model.addDream() }, enabled = turn == null,
-                                modifier = Modifier.size(44.dp)) {
-                                Icon(DreamIcons.Pen, "A new dream", Modifier.size(21.dp))
-                            }
+                            DockItem("Dreams", DreamIcons.Book, false, "open-dreams") { focus.clearFocus(); drawingMode = false; showContents = true }
+                            DockItem("Practice", DreamIcons.Moon, false, "open-practice") { openPanel("practice") }
+                            DockItem("Write", DreamIcons.Pen, !drawingMode, "write-mode") { drawingMode = false; drawingEditor.preview = null }
+                            DockItem("Draw", DreamIcons.Highlighter, drawingMode, "draw-mode") { focus.clearFocus(); drawingMode = true; drawingEditor.expanded = true }
                         }
                     }
                 }
                 if (spread) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     SheetNavigation(Modifier.weight(1f))
-                    JournalDock(Modifier.width(300.dp))
+                    JournalDock(Modifier.width(320.dp))
                 } else {
                     SheetNavigation(Modifier.fillMaxWidth().height(34.dp))
                     Spacer(Modifier.height(6.dp))
@@ -390,14 +400,14 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
     key(entry.id) { when (panel) {
         "practice" -> key(practiceLaunch) { LucidPracticePanel(state, model, practiceRoute, practiceDate, onWrite = { voice, date ->
             val current = model.state.value.current
-            if (current == null || current.title.isNotBlank() || current.body.isNotBlank() || current.audio.isNotEmpty() || current.strokes.isNotEmpty()) model.addDream()
+            if (current == null || current.title.isNotBlank() || current.body.isNotBlank() || current.audio.isNotEmpty() || current.hasDrawing) model.addDream()
             model.setDate(date)
             autoRecord = voice
             panel = if (voice) "voice" else null
         }, onMorningSettings = { openPanel("recall") }) { panel = null } }
         "details" -> DetailsPanel(entry, model) { panel = null }
         "voice" -> VoicePanel(entry, model, { panel = null }, autoRecord)
-        "sketch" -> SketchPanel(entry, model) { panel = null }
+        "sketch" -> LaunchedEffect(Unit) { panel = null; drawingMode = true }
         "appearance" -> AppearancePanel(state.preferences, model::preferences) { panel = null }
         "recall" -> RecallPanel(state.preferences, model::preferences) { panel = null }
     } }
@@ -514,6 +524,7 @@ private fun WritingPage(
     modifier: Modifier = Modifier, readOnly: Boolean = false,
     pageIndex: Int = 0, onPageCount: (Int) -> Unit = {},
     onPageRequest: (Int) -> Unit = {},
+    drawings: List<DiaryDrawing> = entry.pageDrawings, drawingEditor: DrawingEditor? = null, drawingActive: Boolean = false,
 ) {
     val paper = Paper
     val settings = LocalNotebookPreferences.current
@@ -526,6 +537,7 @@ private fun WritingPage(
         else -> Color(0xFFD6CEBF)
     }
     BoxWithConstraints(modifier.then(ruling.pageModifier(settings.ruling == "Lined", ruleColor.copy(alpha = .55f), step))) {
+        PageDrawingCanvas(drawings, pageIndex, behind = true, modifier = Modifier.fillMaxSize().padding(bottom = 48.dp))
         val compact = maxHeight < 360.dp
         val cameraTop = with(LocalDensity.current) { WindowInsets.safeDrawing.getTop(this).toDp() }
         val bodySize = settings.textSize.sp
@@ -540,12 +552,12 @@ private fun WritingPage(
                 top = if (showTitle && !compact) 8.dp else 8.dp, bottom = 48.dp)) {
             if (showTitle) {
                 if (!compact) {
-                    EntryDate(entry.date, onDate, enabled = !readOnly)
+                    EntryDate(entry.date, onDate, enabled = !readOnly && !drawingActive)
                     Spacer(Modifier.height(12.dp))
                 } else {
                     Spacer(Modifier.height(4.dp))
                 }
-                DreamTitle(entry.title, onTitle, onFocus, readOnly, large = !compact, ruling = ruling)
+                DreamTitle(entry.title, onTitle, onFocus, readOnly || drawingActive, large = !compact, ruling = ruling)
                 Spacer(Modifier.height(if (compact) 8.dp else 24.dp))
             }
             if (!showTitle) {
@@ -564,9 +576,12 @@ private fun WritingPage(
                     layout.getLineEnd((layout.lineCount - 1).coerceAtLeast(0), visibleEnd = false)
                 }
                 val slices = remember(entry.body, width, lines, writingStyle) { split(entry.body) }
-                LaunchedEffect(entry.id, slices.size) { if (!readOnly) onPageCount(slices.size) }
-                val slice = slices[pageIndex.coerceIn(0, slices.lastIndex)]
-                val text = entry.body.substring(slice.start, slice.end)
+                val totalPages = maxOf(slices.size, (drawings.maxOfOrNull { it.page } ?: 0) + 1)
+                LaunchedEffect(entry.id, totalPages) { if (!readOnly) onPageCount(totalPages) }
+                // A drawing retains its sheet even when a wider layout fits the text into fewer sheets.
+                val effectiveBody = if (pageIndex >= slices.size) entry.body + "\u000C".repeat(pageIndex - slices.lastIndex) else entry.body
+                val slice = slices.getOrNull(pageIndex) ?: PaperSlice(effectiveBody.length, effectiveBody.length)
+                val text = effectiveBody.substring(slice.start, slice.end)
                 var caret by remember(entry.id) { mutableStateOf(TextRange(0)) }
                 var composing by remember(entry.id) { mutableStateOf<TextRange?>(null) }
                 fun local(range: TextRange) = TextRange((range.start - slice.start).coerceIn(0, text.length), (range.end - slice.start).coerceIn(0, text.length))
@@ -576,14 +591,14 @@ private fun WritingPage(
                         caret = TextRange(slice.start + value.selection.start, slice.start + value.selection.end)
                         composing = value.composition?.let { TextRange(slice.start + it.start, slice.start + it.end) }
                         if (value.text != text) {
-                            val updated = entry.body.substring(0, slice.start) + value.text + entry.body.substring(slice.end)
+                            val updated = effectiveBody.substring(0, slice.start) + value.text + effectiveBody.substring(slice.end)
                             onBody(updated)
                             val pages = split(updated)
                             val target = pages.indexOfFirst { caret.end >= it.start && caret.end <= it.end }.coerceAtLeast(0)
                             if (target != pageIndex) onPageRequest(target)
                         }
                     },
-                    readOnly = readOnly, enabled = !readOnly,
+                    readOnly = readOnly || drawingActive, enabled = !readOnly && !drawingActive,
                     modifier = Modifier.fillMaxSize().imePadding().then(ruling.textModifier(PaperRuling.Part.Body)).testTag("dream-body").semantics { contentDescription = "Dream entry" }
                         .onFocusChanged { if (!readOnly) onFocus(it.isFocused) },
                     textStyle = writingStyle,
@@ -601,6 +616,7 @@ private fun WritingPage(
                 )
             }
         }
+        PageDrawingCanvas(drawings, pageIndex, behind = false, modifier = Modifier.fillMaxSize().padding(bottom = 48.dp), editor = drawingEditor, active = drawingActive && !readOnly)
         Row(Modifier.align(Alignment.BottomStart).fillMaxWidth()
             .windowInsetsPadding(WindowInsets.safeDrawing.only(if (showTitle) WindowInsetsSides.Horizontal else WindowInsetsSides.End))
             .padding(start = if (showTitle) 32.dp else 48.dp, end = 34.dp).height(44.dp),
@@ -687,7 +703,7 @@ private fun NotebookMenu(bookmarked: Boolean, onPanel: (String) -> Unit, onBookm
     onPage: () -> Unit, onDelete: () -> Unit) {
     DropdownMenuItem(text = { Text("Lucid practice & tips") }, onClick = { onPanel("practice") })
     DropdownMenuItem(text = { Text("Record or dictate") }, onClick = { onPanel("voice") })
-    DropdownMenuItem(text = { Text("Sketch & handwriting") }, onClick = { onPanel("sketch") })
+    DropdownMenuItem(text = { Text("Draw on this page") }, onClick = { onPanel("sketch") })
     DropdownMenuItem(text = { Text("Dream details") }, onClick = { onPanel("details") })
     DropdownMenuItem(text = { Text(if (bookmarked) "Remove bookmark" else "Bookmark this dream") }, onClick = onBookmark)
     DropdownMenuItem(text = { Text("Continue on a new page") }, onClick = onPage)

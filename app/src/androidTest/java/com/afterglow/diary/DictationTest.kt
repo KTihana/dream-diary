@@ -88,7 +88,7 @@ class DictationTest {
         app.activityRule.scenario.recreate()
         app.onNodeWithTag("dictation-language-hr-HR").assertIsSelected()
         assertEquals("hr-HR", NotebookPreferencesStore(instrumentation.targetContext).load().dictationLanguage)
-        saveScreenshot("voice-croatian-1.4.4.png")
+        saveScreenshot("voice-croatian-1.5.0.png")
         app.onNodeWithTag("dictate-dream").performClick()
         app.waitUntil(30_000) { app.onAllNodesWithText("Šetala sam uz rijeku").fetchSemanticsNodes().isNotEmpty() }
         app.onNodeWithTag("dictation-language-en-US").assertIsNotEnabled()
@@ -97,7 +97,7 @@ class DictationTest {
         app.waitUntil(15_000) { app.onAllNodesWithTag("dictation-transcript").fetchSemanticsNodes().isNotEmpty() }
         app.onNodeWithTag("dictation-transcript").assertTextContains(croatian)
         app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
-        saveScreenshot("dictation-croatian-1.4.4.png")
+        saveScreenshot("dictation-croatian-1.5.0.png")
         app.onNodeWithText("Add to dream").performScrollTo().performClick()
         lateinit var savedModel: DiaryViewModel
         var dreamId = ""
@@ -124,13 +124,13 @@ class DictationTest {
         app.onNodeWithTag("dictate-dream").performClick()
         waitForMeter("Speak when you’re ready") // Providers without RMS callbacks still show an honest ready state.
         waitForMeter("Listening for your voice") // Negative/quiet RMS stays flat.
-        saveScreenshot("dictation-quiet-1.4.4.png")
+        saveScreenshot("dictation-quiet-1.5.0.png")
         waitForMeter("Sound detected")
         // Wait for some history, rather than capturing a single first bar.
         val screenshotAt = android.os.SystemClock.elapsedRealtime() + 2300
         app.waitUntil(6000) { android.os.SystemClock.elapsedRealtime() >= screenshotAt }
         waitForMeter("Sound detected")
-        saveScreenshot("dictation-waveform-portrait-1.4.4.png")
+        saveScreenshot("dictation-waveform-portrait-1.5.0.png")
         app.activityRule.scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
         app.waitUntil(15_000) { app.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
         // Rotation destroys this microphone session. Restarted sessions must have no old levels.
@@ -142,7 +142,7 @@ class DictationTest {
         app.waitUntil(6000) { android.os.SystemClock.elapsedRealtime() >= landscapeAt }
         waitForMeter("Sound detected")
         app.onNodeWithTag("dictation-waveform").performScrollTo()
-        saveScreenshot("dictation-waveform-landscape-1.4.4.png")
+        saveScreenshot("dictation-waveform-landscape-1.5.0.png")
         app.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
         app.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
         app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
@@ -179,12 +179,12 @@ class DictationTest {
         app.onNodeWithTag("dictate-dream").performScrollTo().performClick()
         app.waitUntil(15_000) { app.onAllNodesWithTag("dictation-transcript").fetchSemanticsNodes().isNotEmpty() }
         app.onNodeWithTag("dictation-transcript").assertTextContains("I was walking through a violet city.")
-        saveScreenshot("dictation-erase-all-portrait-1.4.4.png")
+        saveScreenshot("dictation-erase-all-portrait-1.5.0.png")
         app.activityRule.scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
         app.waitUntil(15_000) { app.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
         app.onNodeWithTag("dictation-transcript").assertTextContains("I was walking through a violet city.")
         app.onNodeWithTag("erase-dictation").performScrollTo()
-        saveScreenshot("dictation-erase-all-landscape-1.4.4.png")
+        saveScreenshot("dictation-erase-all-landscape-1.5.0.png")
         app.onNodeWithTag("erase-dictation").performClick()
         assertFreshDictation()
         app.activityRule.scenario.recreate()
@@ -207,7 +207,7 @@ class DictationTest {
             activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
         app.waitUntil(15_000) { app.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT }
-        saveScreenshot("dictation-start-again-1.4.4.png")
+        saveScreenshot("dictation-start-again-1.5.0.png")
 
         // Starting again in Croatian adds only the new words to the existing dream.
         app.onNodeWithTag("dictate-dream").performClick()
@@ -222,6 +222,54 @@ class DictationTest {
             val dream = ViewModelProvider(activity)[DiaryViewModel::class.java].state.value.current!!
             assertEquals("The dream I want to keep", dream.title)
             assertEquals("The courtyard was quiet.\n\n$croatian", dream.body)
+        }
+    }
+
+    @Test fun shortProviderEndpointsAndSilentTimeoutsKeepTheTakeOpenUntilFinish() {
+        continuousTake(PausingDictationService::class.java, segmented = false)
+    }
+
+    @Test fun segmentedRecognitionKeepsBothPhrasesAndStopsOnlyOnFinish() {
+        continuousTake(SegmentedDictationService::class.java, segmented = true)
+    }
+
+    private fun continuousTake(serviceClass: Class<*>, segmented: Boolean) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(
+            "run-as ${instrumentation.context.packageName} rm -f files/pause-starts"
+        )).bufferedReader().use { it.readText() }
+        setSpeechService(ComponentName(instrumentation.context, serviceClass).flattenToString())
+        instrumentation.uiAutomation.grantRuntimePermission(instrumentation.targetContext.packageName, Manifest.permission.RECORD_AUDIO)
+        instrumentation.uiAutomation.grantRuntimePermission(instrumentation.context.packageName, Manifest.permission.RECORD_AUDIO)
+        app.activityRule.scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+        app.waitUntil(15000) { app.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT }
+        app.waitUntil(15000) { app.onAllNodesWithTag("dream-title").fetchSemanticsNodes().isNotEmpty() }
+        app.onNodeWithContentDescription("A new dream").performClick()
+        app.onNodeWithContentDescription("Speak your dream").performClick()
+        app.onNodeWithTag("dictation-language-en-US").performClick()
+        app.onNodeWithTag("dictate-dream").performClick()
+        app.waitUntil(15000) {
+            if (segmented) app.onAllNodes(hasTestTag("dictation-transcript") and hasText("Then I saw the moon.", substring = true)).fetchSemanticsNodes().isNotEmpty()
+            else app.onAllNodesWithText("Then I saw the moon").fetchSemanticsNodes().isNotEmpty()
+        }
+        val afterPause = android.os.SystemClock.elapsedRealtime() + 2300
+        app.waitUntil(6000) { android.os.SystemClock.elapsedRealtime() >= afterPause }
+        app.onNodeWithTag("dictate-dream").assertIsEnabled().assertTextContains("Finish dictation")
+        app.onNodeWithTag("record-audio").assertIsNotEnabled()
+        app.onNodeWithTag("dictation-transcript").assertTextContains("The river was silver.", substring = true)
+        if (!segmented) saveScreenshot("dictation-through-pauses-1.5.0.png")
+        app.onNodeWithTag("dictate-dream").performScrollTo().performClick()
+        app.waitUntil(15000) { app.onAllNodesWithTag("dictation-waveform").fetchSemanticsNodes().isEmpty() }
+        app.waitUntil(15000) { app.onAllNodes(hasTestTag("dictate-dream") and hasText("Dictate more")).fetchSemanticsNodes().isNotEmpty() }
+        val expected = "The river was silver. Then I saw the moon."
+        val words = app.onNodeWithTag("dictation-transcript").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.EditableText].text
+        assertEquals(expected, words)
+        val afterRestartWindow = android.os.SystemClock.elapsedRealtime() + 1500
+        app.waitUntil(5000) { android.os.SystemClock.elapsedRealtime() >= afterRestartWindow }
+        app.onNodeWithTag("dictation-waveform").assertDoesNotExist()
+        app.onNodeWithText("Add to dream").performScrollTo().performClick()
+        app.activityRule.scenario.onActivity { activity ->
+            assertEquals(expected, ViewModelProvider(activity)[DiaryViewModel::class.java].state.value.current!!.body)
         }
     }
 
