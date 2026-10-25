@@ -413,7 +413,8 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
         "sketch" -> LaunchedEffect(Unit) { panel = null; drawingMode = true }
         "settings" -> NotebookSettingsPanel(state.preferences, model::preferences,
             onMorning = { openPanel("recall"); recallParent = "settings" },
-            onReality = { openPanel("settings-reality") }) { panel = null }
+            onReality = { openPanel("settings-reality") }, onUpdates = { openPanel("updates") }) { panel = null }
+        "updates" -> AppUpdatePanel(model.updates, onBack = { panel = "settings" }) { panel = null }
         "settings-reality" -> NotebookReminderPanel(model, onBack = { panel = "settings" },
             onMorning = { openPanel("recall"); recallParent = "settings-reality" }) { panel = null }
         "recall" -> RecallPanel(state.preferences, model::preferences,

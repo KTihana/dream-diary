@@ -51,13 +51,21 @@ The compact **Notebook options** menu contains Dream details, Bookmark, Continue
 
 Add the **Dream Diary quick-capture widget** from your launcher (or its button in Settings → Morning recall), with Write and Record actions. Add **Catch a dream** to Quick Settings to open recording after unlocking. The widget is eligible for lock screens on Android versions/launchers that support lock-screen widgets; availability is controlled by Android.
 
-The app has no account, cloud sync, app lock, backup, export, or AI feature. Dreams and recordings stay in private app storage. The app itself has no network permission; an installed speech-recognition service may have its own network access. Uninstalling removes the notebook; Android device backup is disabled.
+The app has no account, cloud sync, app lock, backup, export, or AI feature. Dreams and recordings stay in private app storage. The app uses internet access only when you check for or download a GitHub update; update requests contain no diary data or device/account identifiers. The installed speech-recognition service may use its own network access. Uninstalling removes the notebook; Android device backup is disabled.
 
 ## Install on your phone
 
-The installable developer build is [Dream Diary 1.5.2](https://github.com/KTihana/dream-diary/releases/download/v1.5.2/Dream-Diary-1.5.2.apk). Transfer the APK to an Android phone running Android 8.0 or newer, open it in Files and tap Install. Android may ask you to allow installation from that Files app. See the [short installation guide](dist/INSTALL.md).
+The installable developer build is [Dream Diary 1.6.0](https://github.com/KTihana/dream-diary/releases/download/v1.6.0/Dream-Diary-1.6.0.apk). Transfer the APK to an Android phone running Android 8.0 or newer, open it in Files and tap Install. Android may ask you to allow installation from that Files app. See the [short installation guide](dist/INSTALL.md).
 
 A new installation starts with a blank notebook. The app remembers your last-opened dream across app restarts, as well as your entries and settings. The APK is signed with this machine's Android development key and updates earlier APKs signed with the same key without deleting their notebooks. It is a developer build for direct installation; store distribution needs production signing.
+
+## In-app updates
+
+Install 1.6.0 manually once, then open **Settings → App updates** for future releases. Checks run only on request against the public `KTihana/dream-diary` latest-release endpoint, without authentication or diary content. The updater accepts one uploaded stable-version APK from this repository with a GitHub SHA-256 digest, limits metadata/download sizes and redirects to HTTPS GitHub hosts, and streams the download to private cache. Before installation it checks the file checksum/size, package name, current signing certificates, increasing Android version code, matching release version name, and minimum Android version.
+
+A completed download is revalidated when restored after process death and again before the installer opens. Cancelled/interrupted downloads can be retried. Rotation and closing the panel keep an active download in the ViewModel; process termination can interrupt it, so users are asked to keep the app open. A narrow FileProvider exposes only the update cache, with a temporary read grant for the APK; diary files cannot be shared through it. Android controls the per-app install-source permission and the final confirmation. Declining or cancelling leaves the diary intact. Keep the existing signing key and increase both the Gradle version code and release version for every published update. GitHub tags use `vX.Y.Z`, with asset `Dream-Diary-X.Y.Z.apk`.
+
+Sources: [GitHub latest releases](https://docs.github.com/en/rest/releases/releases#get-the-latest-release), [GitHub asset digests](https://github.blog/changelog/2025-06-03-releases-now-expose-digests-for-release-assets/), [Android install-source permission](https://developer.android.com/reference/android/content/pm/PackageManager#canRequestPackageInstalls()), and [FileProvider grants](https://developer.android.com/reference/androidx/core/content/FileProvider).
 
 ## Open and build the Kotlin project
 
@@ -78,7 +86,9 @@ The packaging task builds the app and copies its signed APK into `dist`. The pac
 ANDROID_SERIAL=your-test-device ./gradlew :app:connectedDebugAndroidTest
 ```
 
-Version 1.5.2 simplifies the menu and consolidates appearance preferences and reminder shortcuts in Settings. Android lint has zero errors. Two targeted device flows pass: audio capture and settings changes (paper, font, marker, text size, night mode), persistence after recreation, morning/reality reminder navigation and return paths; plus library search, details, bookmarks, page continuation and drawing. Native captures cover portrait, landscape and night settings layouts. The APK updates 1.5.1 with the same signing key. Broader tests were not rerun for this change. See [current validation details](dist/validation.json).
+Version 1.6.0 adds in-app updates. All 35 JVM tests pass and Android lint has zero errors. Three updater device flows pass on the packaged APK, covering real GitHub checks, cancellation and recovery, restored downloads, checksum/package/signature/version checks, read-only installer grants, and diary-file isolation. A fourth flow builds the same updater with older version metadata to download the real public 1.5.2 release, open Android’s install-source settings, handle the permission return, and open/cancel the installer. The test grants install-source access only on the development emulator. Final installation remains a user action; it was not automated. An upgrade to 1.6.0 preserved the notebook bytes exactly. Native screenshots cover portrait, landscape and the current-version result. No physical-phone validation was performed. See [current validation details](dist/validation.json).
+
+Version 1.5.2 simplifies the menu and consolidates appearance preferences and reminder shortcuts in Settings. Android lint has zero errors. Two targeted device flows pass: audio capture and settings changes (paper, font, marker, text size, night mode), persistence after recreation, morning/reality reminder navigation and return paths; plus library search, details, bookmarks, page continuation and drawing. Native captures cover portrait, landscape and night settings layouts. The APK updates 1.5.1 with the same signing key. Broader tests were not rerun for this change.
 
 Version 1.5.1 refreshes the library presentation. Its packaged APK passes Android lint with zero errors and the existing search, dictionary, bookmark, page-continuation, drawing and recreation device flow. Native screenshots verify portrait, landscape and night mode using example entries on an Android 16 / API 36 emulator. The APK updates 1.5.0 with the same signing key. The broader 1.5.0 tests below were not rerun for this visual change.
 
@@ -98,11 +108,17 @@ The dictionary flow was rerun after updating its scroll selector for the virtual
 
 A separate fresh-install check starts on a blank notebook. A sample dream was typed through the native editor, marked lucid, saved and retained after force-stopping/reopening the app; the last-selected second page reopened correctly.
 
+Updater device tests accept a separate, locally built next-version APK in the development emulator’s private `files/update-fixture.apk`, plus a copy signed with an unrelated test key in `files/update-wrong-signature.apk`. Build the example next-version fixture with `-PdiaryVersionCode=16 -PdiaryVersionName=1.6.1 :app:assembleDebug`; the normal build defaults remain 15 / 1.6.0. Do not publish the fixture. Tests without these files skip the fixture-dependent cases. The `liveUpdateCheck=true` and `liveDownloadCheck=true` instrumentation arguments additionally exercise the real public API and APK CDN; `openUpdateInstaller=true` checks the Android confirmation screen on a development emulator with install-source access already granted. `captureUpdates=true` saves native screenshots. The separate `oldUpdaterFlow=true` test runs the updater built as version 1.5.1/code 13 against the real public 1.5.2 release, checks Android’s install-source screen and installer handoff, then cancels. These optional capture/network steps are not included in the normal offline unit suite.
+
 The APK signature and declared Android version compatibility are verified. The GitHub release includes a `SHA256SUMS` file with the installer checksum. Native screenshots use the packaged APK.
 
 ## Screenshots and design
 
 Screenshots use example dreams on a development emulator. New installations open with a blank page.
+
+![App updates](screenshots/updates-portrait-1.6.0.png)
+![App updates in landscape](screenshots/updates-landscape-1.6.0.png)
+![Latest-version result](screenshots/updates-current-1.6.0.png)
 
 ![Settings in portrait](screenshots/settings-portrait-1.5.2.png)
 ![Settings in landscape](screenshots/settings-landscape-1.5.2.png)
@@ -132,6 +148,7 @@ The earlier [Figma screens and Canva direction board](design/README.md) establis
 - `PaperRuling.kt`: text-aligned notebook rules, including the editor's scrolling above the keyboard.
 - `FeaturePanels.kt`: index, patterns, personal dictionary, lucid details, appearance, and recall preferences.
 - `DreamLibraryDesign.kt`: paper entry previews, date typography, search, filters, and library navigation.
+- `AppRelease.kt` / `AppUpdates.kt` / `AppUpdatePanel.kt`: GitHub release validation, download/verification, private APK sharing and user-controlled installation.
 - `NotebookSettings.kt`: appearance preview, compact settings choices, night paper and direct reminder routes.
 - `PageDrawing.kt`: editable transparent vector layers, pen/highlighter/eraser, movement and transforms, drawing controls, and undo/redo.
 - `VoicePanel.kt` / `DictationWaveform.kt`: microphone recording, playback, live transcription with a sound-level envelope, permission/lifecycle handling.

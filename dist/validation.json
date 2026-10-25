@@ -1,25 +1,28 @@
 {
-  "version": "1.5.2",
+  "version": "1.6.0",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.5.2.apk",
-  "sha256": "e58cc381fc8c6fe588631abcd7f3d20ad880811f9a5321b340d5d5904e72531b",
-  "bytes": 12595382,
+  "artifact": "Dream-Diary-1.6.0.apk",
+  "sha256": "1dd0b37f890793205b3a9f3db0819fb7d5086134d9160090831bddb2f224dde1",
+  "bytes": 12628720,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
+    "jvm_tests": 35,
     "lint_errors": 0,
-    "targeted_device_flows_passed": 2,
+    "targeted_device_flows_passed": 4,
     "test_device": "Android 16 / API 36 emulator, 1080 \u00d7 2400",
     "tests": [
-      "com.afterglow.diary.NotebookFeaturesTest#audioAppearanceAndRecallSettingsAreFunctional",
-      "com.afterglow.diary.NotebookFeaturesTest#searchDictionaryBookmarksContinuationAndSketchSurviveRecreation"
+      "com.afterglow.diary.AppUpdatesTest#settingsOpensUpdatesAndChecksThePublicRelease",
+      "com.afterglow.diary.AppUpdatesTest#downloadCancelVerifyRestoreAndInstallerGrantKeepTheNotebookPrivate",
+      "com.afterglow.diary.AppUpdatesTest#rejectsOldVersionsDifferentPackagesAndDifferentSigningKeys",
+      "com.afterglow.diary.AppUpdatesTest#realUpdateUiReachesPermissionSettingsAndInstaller"
     ],
-    "upgrade": "Installed over 1.5.1 using the same development signing key.",
-    "notes": "Settings/menu navigation update. Tests exercise microphone audio through its dedicated button, selecting paper/font/marker/text size, night paper, persistence after activity recreation, morning and reality-check routes with return navigation, plus the existing library, details, bookmark, continuation and drawing flow. Native settings screenshots cover portrait, landscape and night mode. The broader 1.5.0 baseline of 30 JVM tests and 11 device flows was not rerun. APK signature verified."
+    "upgrade": "The development-only older updater and production 1.6.0 installs preserved the original notebook bytes exactly.",
+    "notes": "Three flows pass on the packaged 1.6.0 APK. They cover settings navigation, real GitHub latest-release checks, portrait/landscape captures, connection failure/retry, cancellation, checksum/signature/version validation, restored verified downloads, read-only content URI grants, exclusion of diary paths, and tamper rejection without changing notebook bytes. A fourth flow uses this updater built with version 1.5.1/code 13 to download the real public 1.5.2 APK, verify it, open Android install-source settings, receive a development-emulator permission grant, hand off to the system installer, and return after cancellation. Final installation is left to Android/user confirmation; it was not automated. The unrelated signing key and next-version APK are test-only files and are not included in the release. No physical Honor phone test was performed."
   },
   "screenshots": [
-    "screenshots/settings-portrait-1.5.2.png",
-    "screenshots/settings-landscape-1.5.2.png",
-    "screenshots/settings-night-1.5.2.png"
+    "screenshots/updates-portrait-1.6.0.png",
+    "screenshots/updates-landscape-1.6.0.png",
+    "screenshots/updates-current-1.6.0.png"
   ]
 }

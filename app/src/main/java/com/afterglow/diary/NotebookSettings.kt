@@ -32,7 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 internal fun NotebookSettingsPanel(settings: NotebookPreferences, onChange: (NotebookPreferences) -> Unit,
-    onMorning: () -> Unit, onReality: () -> Unit, onClose: () -> Unit) {
+    onMorning: () -> Unit, onReality: () -> Unit, onUpdates: () -> Unit, onClose: () -> Unit) {
     NotebookPanel("Dream Diary", onClose, background = LibraryPaper) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().testTag("notebook-settings")) {
             val wide = maxWidth >= 680.dp
@@ -82,6 +82,10 @@ internal fun NotebookSettingsPanel(settings: NotebookPreferences, onChange: (Not
                     SettingsLink("Morning recall", if (settings.reminder) "Around %02d:%02d".format(settings.reminderHour, settings.reminderMinute) else "A moment to remember", DreamIcons.Sun, "settings-morning", onMorning)
                     SettingsDivider()
                     SettingsLink("Reality checks", "Daytime & evening reminders", DreamIcons.Bell, "settings-reality", onReality)
+                }
+                SettingsLabel("Dream Diary")
+                GroupedSection {
+                    SettingsLink("App updates", "Check for a newer version", DreamIcons.History, "settings-updates", onUpdates)
                 }
                 Spacer(Modifier.height(28.dp))
             }

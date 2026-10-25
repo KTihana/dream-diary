@@ -31,6 +31,7 @@ class DiaryViewModel(application: Application, private val savedState: SavedStat
     private val store = JournalStore(application.filesDir)
     private val preferencesStore = NotebookPreferencesStore(application)
     val lucid = LucidPracticeController(application)
+    internal val updates by lazy { AppUpdateController(application, viewModelScope) }
     private val mutableState = MutableStateFlow(DiaryState())
     val state = mutableState.asStateFlow()
     // Every pending item is a complete snapshot, so conflation never drops an earlier dream's edit.

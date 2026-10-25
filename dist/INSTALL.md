@@ -1,6 +1,6 @@
 # Install Dream Diary on Android
 
-1. [Download Dream Diary 1.5.2](https://github.com/KTihana/dream-diary/releases/download/v1.5.2/Dream-Diary-1.5.2.apk) on your Android phone (Android 8.0 or newer).
+1. [Download Dream Diary 1.6.0](https://github.com/KTihana/dream-diary/releases/download/v1.6.0/Dream-Diary-1.6.0.apk) on your Android phone (Android 8.0 or newer).
 2. Open the APK in your phone's Files app. If Android asks, allow that app to install unknown apps, then tap Install.
 3. Open **Dream Diary** from your launcher. A new installation starts with your own blank notebook.
 
@@ -21,3 +21,9 @@ To package another copy from source:
 App-store publication requires a production signing key and a store listing.
 
 Croatian dictation requests Croatian (Croatia), independently of your phone’s display language. If your Android speech provider does not have Croatian available, add or download it in that provider’s voice-input settings. Online recognition may need internet; ordinary audio notes do not need a speech language model.
+
+## Future updates
+
+After installing version 1.6.0, open **Notebook options → Settings → App updates → Check for updates**. Tap **Download update** when a newer version is available. Android may ask you to allow updates from Dream Diary once; return to the app and tap **Install update**, then confirm Android’s prompt. Your existing notebook and settings stay in place.
+
+Updates are downloaded from the public GitHub releases. Keep the app open while downloading. You can cancel or retry; no uninstall is needed.
