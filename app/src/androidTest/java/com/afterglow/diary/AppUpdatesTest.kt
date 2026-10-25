@@ -25,11 +25,11 @@ class AppUpdatesTest {
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
     private suspend fun AppUpdateController.settled() = withTimeout(30_000) { state.first { !it.busy } }
-    private fun release(file: File, version: String = "1.6.1") = AppRelease(AppVersion.parse(version),
+    private fun release(file: File, version: String = context.packageManager.getPackageArchiveInfo(file.absolutePath, 0)?.versionName ?: "0.0.0") = AppRelease(AppVersion.parse(version),
         "https://github.com/KTihana/dream-diary/releases/download/v$version/Dream-Diary-$version.apk", file.length(), file.sha256())
-    private class FixtureSource(val file: File, var pause: Boolean = false) : UpdateSource {
+    private inner class FixtureSource(val file: File, var pause: Boolean = false) : UpdateSource {
         var unavailable = false
-        var release = AppRelease(AppVersion.parse("1.6.1"), "https://github.com/KTihana/dream-diary/releases/download/v1.6.1/Dream-Diary-1.6.1.apk", file.length(), file.sha256())
+        var release = this@AppUpdatesTest.release(file)
         override suspend fun latest(): AppRelease {
             if (unavailable) throw java.net.UnknownHostException("Test connection failure")
             return release
