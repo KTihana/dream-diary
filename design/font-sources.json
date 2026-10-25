@@ -1,0 +1,27 @@
+[
+  {
+    "family": "kalam",
+    "source": "https://github.com/google/fonts/blob/main/ofl/kalam/Kalam-Regular.ttf",
+    "sha256": "57cecb63d4608019371954274ae1d8c397764debd5b19d4a33c1efa4dc923c0b"
+  },
+  {
+    "family": "courierprime",
+    "source": "https://github.com/google/fonts/blob/main/ofl/courierprime/CourierPrime-Regular.ttf",
+    "sha256": "72f793376f8e2841656bf21d77a5de010f2929bd6956a22ee848ad0c7eb978af"
+  },
+  {
+    "family": "dancingscript",
+    "source": "https://github.com/google/fonts/blob/main/ofl/dancingscript/DancingScript[wght].ttf",
+    "sha256": "21808625578fe8d8cd10cb684be546dca077b27cd03a53a2f1ec11dc743c924c"
+  },
+  {
+    "family": "nunito",
+    "source": "https://github.com/google/fonts/blob/main/ofl/nunito/Nunito[wght].ttf",
+    "sha256": "bb55a5ca5c2042335b3991af27c4d0705d0ef41cac6164ac737fd8f2a1e85207"
+  },
+  {
+    "family": "crimsontext",
+    "source": "https://github.com/google/fonts/blob/main/ofl/crimsontext/CrimsonText-Regular.ttf",
+    "sha256": "48e6c5d5ad1d01599d374ecb817e15890d1feb3b8a3a88e527d44c90389e1f06"
+  }
+]

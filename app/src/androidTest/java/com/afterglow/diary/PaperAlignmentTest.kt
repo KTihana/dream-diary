@@ -27,19 +27,26 @@ class PaperAlignmentTest {
             original = model.state.value.preferences
             model.addDream()
             model.editTitle("Flying quietly above the rooftops")
-            model.editBody("I was flying quietly through the city.\n\nI could see every garden, doorway, and chimney.\nThe sky was a soft blue.")
+            model.editBody("I was flying quietly through the city.\n\nČujem šum, osjećam lakoću. Želim još.\nThe sky was a soft blue.")
         }
         try {
             listOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT to Configuration.ORIENTATION_PORTRAIT,
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE to Configuration.ORIENTATION_LANDSCAPE).forEach { (requested, expected) ->
                 rotate(requested, expected)
-                listOf("Book" to 18, "Handwritten" to 22, "Simple" to 16).forEach { (font, size) ->
-                    app.activityRule.scenario.onActivity { activity ->
-                        ViewModelProvider(activity)[DiaryViewModel::class.java].preferences(original.copy(ruling = "Lined", font = font, textSize = size, night = false))
+                val filter = androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("alignmentFonts")
+                WritingFonts.forEachIndexed { i, font ->
+                    if (filter != null && font.name !in filter.split(',')) return@forEachIndexed
+                    WritingSpacing.forEach { spacing ->
+                        val size = if (i % 2 == 0) 16 else 26
+                        app.activityRule.scenario.onActivity { activity ->
+                            ViewModelProvider(activity)[DiaryViewModel::class.java].preferences(original.copy(ruling = "Lined", font = font.name,
+                                textSize = size, night = false, paperTone = "Ivory", spacing = spacing, matchTitle = true))
+                        }
+                        app.waitForIdle()
+                        val pixels = app.onRoot().captureToImage().toPixelMap()
+                        assertTextBetweenVisibleRules("dream-title", pixels, "${font.name} $size $spacing, orientation $expected")
+                        assertTextBetweenVisibleRules("dream-body", pixels, "${font.name} $size $spacing, orientation $expected")
                     }
-                    app.waitForIdle()
-                    assertTextBetweenVisibleRules("dream-title", "$font $size, orientation $expected")
-                    assertTextBetweenVisibleRules("dream-body", "$font $size, orientation $expected")
                 }
             }
         } finally {
@@ -48,13 +55,12 @@ class PaperAlignmentTest {
     }
 
     /** Inspect the actual rendered blue rules, independently of the drawing implementation. */
-    private fun assertTextBetweenVisibleRules(tag: String, description: String) {
+    private fun assertTextBetweenVisibleRules(tag: String, pixels: androidx.compose.ui.graphics.PixelMap, description: String) {
         val node = app.onNodeWithTag(tag)
         val layouts = mutableListOf<TextLayoutResult>()
         node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { assertTrue(it(layouts)) }
         val text = layouts.single()
         val bounds = node.fetchSemanticsNode().boundsInRoot
-        val pixels = app.onRoot().captureToImage().toPixelMap()
         // This column is outside the ink but inside the full-width notebook paper.
         val spread = app.onAllNodesWithTag("notebook-spread").fetchSemanticsNodes().isNotEmpty()
         val x = if (spread && tag == "dream-title") app.onNodeWithTag("left-leaf").fetchSemanticsNode().boundsInRoot.left.toInt() + 12 else pixels.width - 12

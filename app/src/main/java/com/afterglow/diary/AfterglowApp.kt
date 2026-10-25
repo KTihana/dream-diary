@@ -87,14 +87,14 @@ internal val Desk = Color(0xFFE5DFD7)
 internal val LocalNotebookPreferences = staticCompositionLocalOf { NotebookPreferences() }
 internal val LocalLucidPaper = staticCompositionLocalOf { false }
 private val LocalPaperTint = staticCompositionLocalOf<Color?> { null }
-internal fun notebookPaperColor(lucid: Boolean, night: Boolean): Color = when {
+internal fun notebookPaperColor(lucid: Boolean, night: Boolean, tone: String = "Ivory"): Color = when {
     lucid && night -> Color(0xFF302A3D)
     lucid -> Color(0xFFF0E8F8)
     night -> Color(0xFF252329)
-    else -> Color(0xFFFCFAF4)
+    else -> paperToneColor(tone)
 }
 internal val Paper: Color @Composable get() = LocalPaperTint.current
-    ?: notebookPaperColor(LocalLucidPaper.current, LocalNotebookPreferences.current.night)
+    ?: notebookPaperColor(LocalLucidPaper.current, LocalNotebookPreferences.current.night, LocalNotebookPreferences.current.paperTone)
 private val PaperRule: Color @Composable get() = when {
     LocalLucidPaper.current && LocalNotebookPreferences.current.night -> Color(0xFF78668C)
     LocalLucidPaper.current -> Color(0xFFC4B6D2)
@@ -103,9 +103,7 @@ private val PaperRule: Color @Composable get() = when {
 }
 internal val Ink: Color @Composable get() = if (LocalNotebookPreferences.current.night) Color(0xFFE0D8CA) else Color(0xFF292D30)
 internal val Pencil: Color @Composable get() = if (LocalNotebookPreferences.current.night) Color(0xFFB5AA9D) else Color(0xFF72736F)
-internal val Cover: Color @Composable get() = when (LocalNotebookPreferences.current.cover) {
-    "Rose" -> Color(0xFF925862); "Midnight" -> Color(0xFF536A88); else -> Color(0xFF7F6B57)
-}
+internal val Cover: Color @Composable get() = pageMarkerColor(LocalNotebookPreferences.current.cover)
 internal val DiarySerif = FontFamily(
     Font(R.font.lora_regular, FontWeight.Normal),
     Font(R.font.lora_italic, FontWeight.Normal, FontStyle.Italic),
@@ -233,7 +231,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
     }
 
     val pageTint by animateColorAsState(
-        targetValue = notebookPaperColor(entry.lucid == true, state.preferences.night),
+        targetValue = notebookPaperColor(entry.lucid == true, state.preferences.night, state.preferences.paperTone),
         animationSpec = tween(320), label = "Lucid paper tint",
     )
     // The tint belongs to this dream and extends to both leaves and the screen edges.
@@ -324,7 +322,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                         ) {
                             // A turning leaf keeps the color of its own dream.
                             CompositionLocalProvider(LocalLucidPaper provides (outgoing.entry.lucid == true),
-                                LocalPaperTint provides notebookPaperColor(outgoing.entry.lucid == true, state.preferences.night)) {
+                                LocalPaperTint provides notebookPaperColor(outgoing.entry.lucid == true, state.preferences.night, state.preferences.paperTone)) {
                             Box(Modifier.fillMaxHeight().fillMaxWidth(if (spread) .5f else 1f).background(Paper)) {
                                 if (abs(angle.value) <= 90f) {
                                     if (!forward && spread) {
@@ -471,7 +469,7 @@ private fun Modifier.paperSurface(spread: Boolean = false, topInset: Dp = 0.dp, 
         val flecks = List(180) { Offset(random.nextFloat() * size.width, random.nextFloat() * size.height) }
         val start = if (spread) topInset.toPx() + 112.dp.toPx() else 64.dp.toPx()
         val bottom = size.height - (if (spread) 64.dp else 82.dp).toPx()
-        val step = (settings.textSize + 14).sp.toPx()
+        val step = settings.lineHeight.sp.toPx()
         onDrawBehind {
             var y = start
             while (drawRuling && y < bottom && settings.ruling != "Plain") {
@@ -508,7 +506,7 @@ private fun TitlePage(
     val ruling = remember { PaperRuling() }
     val settings = LocalNotebookPreferences.current
     val ruleColor = PaperRule
-    val step = with(LocalDensity.current) { (settings.textSize + 14).sp.toPx() }
+    val step = with(LocalDensity.current) { settings.lineHeight.sp.toPx() }
     Box(modifier.then(ruling.pageModifier(settings.ruling == "Lined", ruleColor.copy(alpha = .55f), step, titlePage = true))) {
         Column(Modifier.fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Start))
@@ -539,7 +537,7 @@ private fun WritingPage(
     val settings = LocalNotebookPreferences.current
     val ruling = remember { PaperRuling() }
     val ruleColor = PaperRule
-    val step = with(LocalDensity.current) { (settings.textSize + 14).sp.toPx() }
+    val step = with(LocalDensity.current) { settings.lineHeight.sp.toPx() }
     val foldShade = when {
         LocalLucidPaper.current -> if (settings.night) Color(0xFF514260) else Color(0xFFC9B9DA)
         settings.night -> Color(0xFF4E4653)
@@ -549,12 +547,8 @@ private fun WritingPage(
         PageDrawingCanvas(drawings, pageIndex, behind = true, modifier = Modifier.fillMaxSize().padding(bottom = 48.dp))
         val compact = maxHeight < 360.dp
         val cameraTop = with(LocalDensity.current) { WindowInsets.safeDrawing.getTop(this).toDp() }
-        val bodySize = settings.textSize.sp
-        val bodyLeading = (settings.textSize + 14).sp
-        val writingFont = when (settings.font) { "Handwritten" -> Handwritten; "Simple" -> FontFamily.SansSerif; else -> DiarySerif }
-        val writingStyle = TextStyle(fontFamily = writingFont, color = Ink, fontSize = bodySize, lineHeight = bodyLeading,
-            platformStyle = PlatformTextStyle(includeFontPadding = false),
-            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None))
+        val bodyLeading = settings.lineHeight.sp
+        val writingStyle = notebookWritingStyle(settings)
         Column(Modifier.fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing.only(if (showTitle) WindowInsetsSides.Horizontal else WindowInsetsSides.End))
             .padding(start = if (showTitle) 32.dp else 48.dp, end = if (showTitle) 24.dp else 32.dp,
@@ -657,7 +651,8 @@ private fun EntryDate(date: LocalDate, onClick: () -> Unit, enabled: Boolean) {
 @Composable
 private fun DreamTitle(value: String, onChange: (String) -> Unit, onFocus: (Boolean) -> Unit, readOnly: Boolean, large: Boolean = false, ruling: PaperRuling? = null) {
     val focus = LocalFocusManager.current
-    val titleStyle = TextStyle(fontFamily = DiarySerif, color = Ink,
+    val settings = LocalNotebookPreferences.current
+    val titleStyle = TextStyle(fontFamily = if (settings.matchTitle) writingFont(settings.font).family else DiarySerif, color = writingInk(settings),
         fontSize = if (large) 30.sp else 32.sp, lineHeight = if (large) 40.sp else 42.sp, letterSpacing = (-.7).sp,
         platformStyle = PlatformTextStyle(includeFontPadding = false),
         lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None))

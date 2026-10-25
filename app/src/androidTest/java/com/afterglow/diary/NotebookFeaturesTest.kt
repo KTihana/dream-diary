@@ -143,6 +143,19 @@ class NotebookFeaturesTest {
         ready()
         app.onNodeWithContentDescription("A new dream").performClick()
         val text = (1..28).joinToString("\n") { "Line $it: I followed the river beneath the stars." }
+        app.onNodeWithTag("dream-body").performClick()
+        val keyboardDeadline = SystemClock.uptimeMillis() + 5_000
+        var keyboardReady = false
+        while (!keyboardReady && SystemClock.uptimeMillis() < keyboardDeadline) {
+            app.activityRule.scenario.onActivity { activity ->
+                val insets = androidx.core.view.ViewCompat.getRootWindowInsets(activity.window.decorView)
+                keyboardReady = insets?.isVisible(androidx.core.view.WindowInsetsCompat.Type.ime()) == true &&
+                    (insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom > 0)
+            }
+            if (!keyboardReady) SystemClock.sleep(50)
+        }
+        assertTrue("Keyboard did not open before typing", keyboardReady)
+        app.waitForIdle()
         app.onNodeWithTag("dream-body").performTextReplacement(text)
         val visibleText = app.onNodeWithTag("dream-body").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.EditableText].text
         val insertionAt = text.indexOf(visibleText) + visibleText.length
@@ -215,21 +228,25 @@ class NotebookFeaturesTest {
         chooseSetting("paper", "Dotted")
         chooseSetting("font", "Handwritten")
         chooseSetting("marker", "Rose")
+        app.onNodeWithTag("settings-font").performScrollTo().performClick()
         app.onNodeWithTag("settings-size-larger").performScrollTo().performClick()
+        app.onNodeWithContentDescription("Back to settings").performClick()
         app.onNodeWithTag("night-paper").performScrollTo().performClick().assertIsOn()
         app.onNodeWithContentDescription("Close").performClick()
         app.activityRule.scenario.recreate()
         ready()
         option("Settings")
-        app.onNodeWithTag("settings-paper").assertTextContains("Dotted")
-        app.onNodeWithTag("settings-font").assertTextContains("Handwritten")
+        app.onNodeWithTag("settings-paper").assertTextContains("Dotted", substring = true)
+        app.onNodeWithTag("settings-font").assertTextContains("Handwritten", substring = true)
         app.onNodeWithTag("settings-marker").assertTextContains("Rose")
         app.activityRule.scenario.onActivity { assertEquals(20, ViewModelProvider(it)[DiaryViewModel::class.java].state.value.preferences.textSize) }
         app.onNodeWithTag("night-paper").performScrollTo().assertIsOn().performClick()
         chooseSetting("paper", "Lined")
         chooseSetting("font", "Book")
         chooseSetting("marker", "Linen")
+        app.onNodeWithTag("settings-font").performScrollTo().performClick()
         app.onNodeWithTag("settings-size-smaller").performScrollTo().performClick()
+        app.onNodeWithContentDescription("Back to settings").performClick()
         app.onNodeWithTag("settings-morning").performScrollTo().performClick()
         app.onNodeWithText("Another prompt").performClick()
         app.onNodeWithText(RecallPrompts[1]).assertExists()
@@ -244,7 +261,8 @@ class NotebookFeaturesTest {
 
     private fun chooseSetting(name: String, value: String) {
         app.onNodeWithTag("settings-$name").performScrollTo().performClick()
-        app.onNodeWithTag("settings-$name-$value").performClick()
+        app.onNodeWithTag("settings-$name-$value").performScrollTo().performClick()
+        if (name in setOf("font", "paper")) app.onNodeWithContentDescription("Back to settings").performClick()
     }
 
     private fun captureSettingsIfRequested() {

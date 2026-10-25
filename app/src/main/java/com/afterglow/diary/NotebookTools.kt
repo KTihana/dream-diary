@@ -34,21 +34,29 @@ data class NotebookPreferences(
     val night: Boolean = false, val textSize: Int = 18, val prompts: Boolean = true,
     val reminder: Boolean = false, val reminderHour: Int = 8, val reminderMinute: Int = 0,
     val dictationLanguage: String = "hr-HR",
+    val paperTone: String = "Ivory", val inkColor: String = "Charcoal",
+    val spacing: String = "Comfortable", val matchTitle: Boolean = false,
 )
 class NotebookPreferencesStore(context: Context) {
     private val prefs = context.getSharedPreferences("notebook-tools", Context.MODE_PRIVATE)
     fun load() = NotebookPreferences(
         ruling = prefs.getString("ruling", "Lined")!!, font = prefs.getString("font", "Book")!!,
         cover = prefs.getString("cover", "Linen")!!, night = prefs.getBoolean("night", false),
-        textSize = prefs.getInt("textSize", 18).coerceIn(16, 24), prompts = prefs.getBoolean("prompts", true),
+        textSize = prefs.getInt("textSize", 18).coerceIn(16, 26), prompts = prefs.getBoolean("prompts", true),
         reminder = prefs.getBoolean("reminder", false), reminderHour = prefs.getInt("hour", 8), reminderMinute = prefs.getInt("minute", 0),
         dictationLanguage = prefs.getString("dictationLanguage", "hr-HR")?.takeIf { it in setOf("hr-HR", "en-US") } ?: "hr-HR",
+        paperTone = prefs.getString("paperTone", "Ivory")?.takeIf { it in PaperTones } ?: "Ivory",
+        inkColor = prefs.getString("inkColor", "Charcoal")?.takeIf { it in InkColors } ?: "Charcoal",
+        spacing = prefs.getString("spacing", "Comfortable")?.takeIf { it in WritingSpacing } ?: "Comfortable",
+        matchTitle = prefs.getBoolean("matchTitle", false),
     )
     fun save(p: NotebookPreferences) { prefs.edit().putString("ruling", p.ruling).putString("font", p.font)
         .putString("cover", p.cover).putBoolean("night", p.night).putInt("textSize", p.textSize)
         .putBoolean("prompts", p.prompts).putBoolean("reminder", p.reminder)
         .putInt("hour", p.reminderHour).putInt("minute", p.reminderMinute)
-        .putString("dictationLanguage", p.dictationLanguage).apply() }
+        .putString("dictationLanguage", p.dictationLanguage)
+        .putString("paperTone", p.paperTone).putString("inkColor", p.inkColor)
+        .putString("spacing", p.spacing).putBoolean("matchTitle", p.matchTitle).apply() }
     fun selectedDreamId(): String? = prefs.getString("selectedDream", null)
     fun selectDream(id: String) { prefs.edit().putString("selectedDream", id).apply() }
     fun meanings(): List<SymbolMeaning> = JSONArray(prefs.getString("meanings", "[]")).let { a ->

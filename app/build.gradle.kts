@@ -11,8 +11,8 @@ android {
         applicationId = "com.afterglow.diary"
         minSdk = 26
         targetSdk = 36
-        versionCode = providers.gradleProperty("diaryVersionCode").orNull?.toInt() ?: 15
-        versionName = providers.gradleProperty("diaryVersionName").orNull ?: "1.6.0"
+        versionCode = providers.gradleProperty("diaryVersionCode").orNull?.toInt() ?: 16
+        versionName = providers.gradleProperty("diaryVersionName").orNull ?: "1.7.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }

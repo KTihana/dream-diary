@@ -1,28 +1,34 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.6.0.apk",
-  "sha256": "1dd0b37f890793205b3a9f3db0819fb7d5086134d9160090831bddb2f224dde1",
-  "bytes": 12628720,
+  "artifact": "Dream-Diary-1.7.0.apk",
+  "sha256": "ad1bd7edd12d9c75c16f381f290da8f96781851bce495137f70d53b5785ee565",
+  "bytes": 13963941,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
     "jvm_tests": 35,
     "lint_errors": 0,
     "targeted_device_flows_passed": 4,
-    "test_device": "Android 16 / API 36 emulator, 1080 \u00d7 2400",
+    "test_device": "Android 16 / API 36 emulator, 1080 × 2400",
     "tests": [
-      "com.afterglow.diary.AppUpdatesTest#settingsOpensUpdatesAndChecksThePublicRelease",
-      "com.afterglow.diary.AppUpdatesTest#downloadCancelVerifyRestoreAndInstallerGrantKeepTheNotebookPrivate",
-      "com.afterglow.diary.AppUpdatesTest#rejectsOldVersionsDifferentPackagesAndDifferentSigningKeys",
-      "com.afterglow.diary.AppUpdatesTest#realUpdateUiReachesPermissionSettingsAndInstaller"
+      "com.afterglow.diary.NotebookAppearanceTest#choicesPersistResetOnlyAppearanceAndKeepTheDream",
+      "com.afterglow.diary.PaperAlignmentTest#titleAndWritingStayBetweenRulesAcrossFontsSizesAndRotation",
+      "com.afterglow.diary.NotebookFeaturesTest#audioAppearanceAndRecallSettingsAreFunctional",
+      "com.afterglow.diary.NotebookFeaturesTest#automaticSheetsKeepAllTextInOrder"
     ],
-    "upgrade": "The development-only older updater and production 1.6.0 installs preserved the original notebook bytes exactly.",
-    "notes": "Three flows pass on the packaged 1.6.0 APK. They cover settings navigation, real GitHub latest-release checks, portrait/landscape captures, connection failure/retry, cancellation, checksum/signature/version validation, restored verified downloads, read-only content URI grants, exclusion of diary paths, and tamper rejection without changing notebook bytes. A fourth flow uses this updater built with version 1.5.1/code 13 to download the real public 1.5.2 APK, verify it, open Android install-source settings, receive a development-emulator permission grant, hand off to the system installer, and return after cancellation. Final installation is left to Android/user confirmation; it was not automated. The unrelated signing key and next-version APK are test-only files and are not included in the release. No physical Honor phone test was performed."
+    "upgrade": "Installing 1.7.0 over 1.6.0 preserved the original notebook bytes exactly.",
+    "notes": "Appearance persistence, selective reset, title/body preservation, paper/ink/spacing choices, portrait/landscape/night layouts, audio and reminder navigation, and editing/pagination pass. Rendered-rule tests cover all eight fonts across three line spacings, alternating 16/26 sp sizes and both orientations. The Rounded font alignment subset was rerun after explicitly setting its variable weight to 400; all four final device flows pass on the packaged APK. Native screenshots use that APK. All bundled font cmap tables contain Croatian ČĆĐŠŽ/čćđšž. No physical Honor phone test was performed. The broader speech/practice/updater suites were not rerun for this appearance update."
   },
   "screenshots": [
-    "screenshots/updates-portrait-1.6.0.png",
-    "screenshots/updates-landscape-1.6.0.png",
-    "screenshots/updates-current-1.6.0.png"
+    "screenshots/writing-fonts-portrait-1.7.0.png",
+    "screenshots/writing-fonts-landscape-1.7.0.png",
+    "screenshots/writing-options-portrait-1.7.0.png",
+    "screenshots/paper-options-portrait-1.7.0.png",
+    "screenshots/custom-notebook-portrait-1.7.0.png",
+    "screenshots/custom-lucid-portrait-1.7.0.png",
+    "screenshots/custom-lucid-landscape-1.7.0.png",
+    "screenshots/writing-night-portrait-1.7.0.png",
+    "screenshots/settings-portrait-1.7.0.png"
   ]
 }

@@ -1,10 +1,10 @@
 # Dream Diary
 
-A paper-like Android dream journal. Write or draw on the page, dictate in **Croatian or English**, and mark lucid dreams with lavender paper. Includes voice notes and reality-check reminders. Saved locally, no account needed.
+A paper-like Android dream journal. Write or draw on the page, dictate in **Croatian or English**, and mark lucid dreams with lavender paper. Choose from eight writing styles, paper tones and ink colors. Includes voice notes and reality-check reminders. Saved locally, no account needed.
 
-[![Download & install for Android](design/github-preview/download-android.svg)](https://github.com/KTihana/dream-diary/releases/download/v1.6.0/Dream-Diary-1.6.0.apk)
+[![Download & install for Android](design/github-preview/download-android.svg)](https://github.com/KTihana/dream-diary/releases/download/v1.7.0/Dream-Diary-1.7.0.apk)
 
-**Android 8.0+ · Version 1.6.0 · Developer build**
+**Android 8.0+ · Version 1.7.0 · Developer build**
 
 ## Screenshots
 
@@ -13,7 +13,7 @@ A paper-like Android dream journal. Write or draw on the page, dictate in **Croa
   &nbsp;&nbsp;
   <img src="screenshots/your-dreams-portrait-1.5.1.png" width="240" alt="Your dreams, arranged by date on paper cards" />
   &nbsp;&nbsp;
-  <img src="screenshots/updates-portrait-1.6.0.png" width="240" alt="Check for updates inside Dream Diary" />
+  <img src="screenshots/writing-fonts-portrait-1.7.0.png" width="240" alt="Choose your writing style" />
 </p>
 
 <p align="center"><em>Write, browse, and make the notebook yours.</em></p>
