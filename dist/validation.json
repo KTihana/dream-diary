@@ -1,38 +1,24 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.5.0.apk",
-  "sha256": "5279715d8d9a4084cf159ef7fb6439d3aefacd403d398f7f80b4a8c668694633",
-  "bytes": 13213108,
+  "artifact": "Dream-Diary-1.5.1.apk",
+  "sha256": "0d56d3a1d096f6823807fb6fc5cc78db15727e03ad484c92f67b8d3dfb0f1263",
+  "bytes": 13276243,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
-    "jvm_tests": 30,
     "lint_errors": 0,
-    "targeted_device_flows_passed": 11,
-    "test_device": "Android 16 / API 36 emulator, 1080 × 2400",
+    "targeted_device_flows_passed": 1,
+    "test_device": "Android 16 / API 36 emulator, 1080 \u00d7 2400",
     "tests": [
-      "com.afterglow.diary.DictationTest#croatianLanguageIsRememberedAndDiacriticsReachTheSavedDream",
-      "com.afterglow.diary.DictationTest#eraseAllDiscardsLiveReviewedAndPendingWordsWhileKeepingTheSavedDream",
-      "com.afterglow.diary.DictationTest#microphoneDictationCanBeReviewedEditedAndAddedWithoutReplacingTheDream",
-      "com.afterglow.diary.DictationTest#segmentedRecognitionKeepsBothPhrasesAndStopsOnlyOnFinish",
-      "com.afterglow.diary.DictationTest#shortProviderEndpointsAndSilentTimeoutsKeepTheTakeOpenUntilFinish",
-      "com.afterglow.diary.DictationTest#soundMeterFollowsSpeechLevelsAndStopsWhenTheAppLeavesTheForeground",
-      "com.afterglow.diary.NotebookFeaturesTest#automaticSheetsKeepAllTextInOrder",
-      "com.afterglow.diary.NotebookFeaturesTest#searchDictionaryBookmarksContinuationAndSketchSurviveRecreation",
-      "com.afterglow.diary.NotebookUiTest#editingLucidityNewPagesAndRotationKeepTheNotebookIntact",
-      "com.afterglow.diary.PageDrawingTest#drawEraseTransformAndSaveOnTheActualDiaryPage",
-      "com.afterglow.diary.PaperAlignmentTest#titleAndWritingStayBetweenRulesAcrossFontsSizesAndRotation"
+      "com.afterglow.diary.NotebookFeaturesTest#searchDictionaryBookmarksContinuationAndSketchSurviveRecreation"
     ],
-    "upgrade": "Installed over 1.4.4; an earlier title, Croatian text, and legacy sketch remained intact after saving the notebook in format 3.",
-    "notes": "Speech fixtures live only in the test APK. They supply English/Croatian words, RMS levels, short phrase endings, silent timeouts, and continuous segments. Tests verify automatic continuation, exact accumulated words, manual finish without restart, erase-all including pending results, lifecycle cleanup, and sound feedback in both orientations. Physical-phone acoustic accuracy and provider availability were not tested. Drawing checks use real page touch gestures, rendered pixel comparisons for erasing, colors and thickness, undo/redo, movement, size/rotation/opacity controls, transparency, placement behind text, disk persistence and activity recreation. Existing notebook/pagination/alignment flows also pass. All six voice flows were rechecked after the voice-only fixes; the ready-state fixture window was lengthened for the final waveform recheck. Test APK and temporary provider selection were removed after checks."
+    "upgrade": "Installed over 1.5.0 using the same development signing key.",
+    "notes": "Visual library update. Native portrait, landscape and night-mode screenshots use six fictional emulator-only entries. The existing flow checks search, lucid/bookmark filters, dictionary links, page continuation, drawing, and recreation. The broader 1.5.0 baseline of 30 JVM tests and 11 device flows was not rerun for this visual change. APK signature verified; test APK and its provider selection removed after validation."
   },
   "screenshots": [
-    "screenshots/blank-notebook-1.5.0.png",
-    "screenshots/drawing-tools-portrait-1.5.0.png",
-    "screenshots/drawing-in-diary-1.5.0.png",
-    "screenshots/drawing-tools-landscape-1.5.0.png",
-    "screenshots/dictation-through-pauses-1.5.0.png",
-    "screenshots/dictation-waveform-landscape-1.5.0.png"
+    "screenshots/your-dreams-portrait-1.5.1.png",
+    "screenshots/your-dreams-landscape-1.5.1.png",
+    "screenshots/your-dreams-night-1.5.1.png"
   ]
 }
