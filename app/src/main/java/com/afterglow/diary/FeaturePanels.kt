@@ -59,7 +59,7 @@ import java.util.Locale
 
 @Composable
 internal fun NotebookPanel(title: String, onClose: () -> Unit, onDismiss: () -> Unit = onClose,
-    onBack: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+    onBack: (() -> Unit)? = null, background: Color? = null, content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         val view = LocalView.current
         val night = LocalNotebookPreferences.current.night
@@ -73,7 +73,7 @@ internal fun NotebookPanel(title: String, onClose: () -> Unit, onDismiss: () -> 
                 }
             }
         }
-        Surface(Modifier.fillMaxSize(), color = PanelPaper) {
+        Surface(Modifier.fillMaxSize(), color = background ?: PanelPaper) {
             Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout)).imePadding(), contentAlignment = Alignment.TopCenter) {
                 Column(Modifier.widthIn(max = 860.dp).fillMaxSize().padding(horizontal = 22.dp)) {
                     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -104,81 +104,56 @@ internal fun DreamLibrary(state: DiaryState, model: DiaryViewModel, onPractice: 
     val fromDate = runCatching { LocalDate.parse(from) }.getOrNull()
     val untilDate = runCatching { LocalDate.parse(until) }.getOrNull()
     fun openDream(entry: DreamEntry) { model.select(state.entries.indexOfFirst { it.id == entry.id }); onClose() }
-    NotebookPanel("Dream Diary", onClose) {
+    val validDates = !dates || ((from.isEmpty() || fromDate != null) && (until.isEmpty() || untilDate != null) &&
+        (fromDate == null || untilDate == null || fromDate <= untilDate))
+    val results = if (!validDates) emptyList() else searchDreams(state.entries, query,
+        when (filter) { "Lucid" -> true; "Non-lucid" -> false; else -> null }, bookmarks,
+        if (dates) fromDate else null, if (dates) untilDate else null)
+    NotebookPanel("Dream Diary", onClose, background = LibraryPaper) {
         val focus = LocalFocusManager.current
         val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-        if (!keyboardVisible) {
-            PageHeading("Your dreams", "${state.entries.count { it.title.isNotBlank() || it.body.isNotBlank() }} entries, all in your own words.")
-            Row(Modifier.fillMaxWidth().selectableGroup().padding(bottom = 16.dp).clip(RoundedCornerShape(12.dp)).background(Ink.copy(alpha = .055f)).padding(3.dp)) {
-                listOf("Index", "Patterns", "Symbols", "Practice").forEachIndexed { i, label ->
-                    Box(Modifier.weight(1f).testTag("library-tab-$i").clip(RoundedCornerShape(9.dp)).background(if (tab == i) ControlPaper else Color.Transparent)
-                        .selectable(selected = tab == i, role = Role.Tab, onClick = { if (i == 3) onPractice() else tab = i }).padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
-                        Text(label, color = if (tab == i) Ink else Pencil, fontWeight = if (tab == i) FontWeight.SemiBold else FontWeight.Normal, fontSize = 13.sp)
-                    }
-                }
-            }
-        }
-        when (tab) {
-            0 -> {
-                OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().testTag("dream-search"),
-                    shape = RoundedCornerShape(14.dp), leadingIcon = { Icon(Icons.Outlined.Search, null, tint = Pencil, modifier = Modifier.size(20.dp)) },
-                    label = { Text("Search your dreams") }, placeholder = { Text("Words, people, or \"exact phrases\"") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }))
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("All", "Lucid", "Non-lucid").forEach { choice ->
-                        FilterChip(filter == choice, { filter = choice }, label = { Text(choice) }, modifier = Modifier.testTag("filter-$choice"))
-                    }
-                    FilterChip(bookmarks, { bookmarks = !bookmarks }, label = { Text("Bookmarks") })
-                    FilterChip(dates, { dates = !dates }, label = { Text("Dates") })
-                }
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().testTag("dream-library")) {
+            val wide = maxWidth >= 680.dp
+            fun newDream() { focus.clearFocus(); model.addDream(); onClose() }
+            @Composable fun Controls() {
+                LibrarySearch(query, { query = it }, { focus.clearFocus() })
+                LibraryFilters(filter, { filter = it }, bookmarks, { bookmarks = !bookmarks }, dates, { dates = !dates }, wrap = wide)
                 if (dates) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(from, { from = it }, Modifier.weight(1f), label = { Text("From") },
-                            placeholder = { Text("YYYY-MM-DD") }, isError = from.isNotEmpty() && fromDate == null, singleLine = true)
-                        OutlinedTextField(until, { until = it }, Modifier.weight(1f), label = { Text("Through") },
-                            placeholder = { Text("YYYY-MM-DD") }, isError = until.isNotEmpty() && untilDate == null, singleLine = true)
+                    Row(Modifier.padding(top = 4.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(from, { from = it }, Modifier.weight(1f).testTag("library-date-from"), label = { Text("From") },
+                            placeholder = { Text("YYYY-MM-DD", fontSize = 11.sp) }, isError = from.isNotEmpty() && fromDate == null, singleLine = true)
+                        OutlinedTextField(until, { until = it }, Modifier.weight(1f).testTag("library-date-until"), label = { Text("Through") },
+                            placeholder = { Text("YYYY-MM-DD", fontSize = 11.sp) }, isError = until.isNotEmpty() && untilDate == null, singleLine = true)
                     }
-                    if (fromDate != null && untilDate != null && fromDate > untilDate) Text("The start date must be before the end date.", color = MaterialTheme.colorScheme.error)
-                }
-                val validDates = !dates || ((from.isEmpty() || fromDate != null) && (until.isEmpty() || untilDate != null) &&
-                    (fromDate == null || untilDate == null || fromDate <= untilDate))
-                val results = if (!validDates) emptyList() else searchDreams(state.entries, query,
-                    when (filter) { "Lucid" -> true; "Non-lucid" -> false; else -> null }, bookmarks,
-                    if (dates) fromDate else null, if (dates) untilDate else null)
-                Text("${results.size} ${if (results.size == 1) "dream" else "dreams"} · ${results.map { it.date }.distinct().size} nights",
-                    Modifier.padding(vertical = 12.dp), color = Pencil, fontSize = 13.sp)
-                LazyColumn(Modifier.weight(1f).fillMaxWidth().testTag("dream-index"), contentPadding = PaddingValues(bottom = 24.dp)) {
-                    if (results.isEmpty()) item { EmptyNote("No dreams on these pages yet", "Try another phrase or change the filters.") }
-                    results.groupBy { it.date }.forEach { (date, dreams) ->
-                        item(key = "date-$date") {
-                            Text(date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy")), Modifier.padding(top = 14.dp, bottom = 4.dp),
-                                fontSize = 12.sp, color = Pencil)
-                        }
-                        items(dreams, key = { it.id }) { dream -> DreamIndexRow(dream, { openDream(dream) }) }
-                    }
+                    if (fromDate != null && untilDate != null && fromDate > untilDate) Text("The start date must be before the end date.", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                 }
             }
-            1 -> PatternPages(state.entries) { pattern -> query = "\"$pattern\""; tab = 0; filter = "All"; bookmarks = false; dates = false }
-            2 -> DictionaryPages(state, model) { name -> query = "\"$name\""; tab = 0; filter = "All"; bookmarks = false; dates = false }
+            Column(Modifier.fillMaxSize()) {
+                if (!wide && !keyboardVisible) LibraryHeading(onNew = ::newDream)
+                if (!keyboardVisible) LibraryTabs(tab) { if (it == 3) onPractice() else tab = it }
+                when (tab) {
+                    0 -> if (wide) {
+                        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(26.dp)) {
+                            Column(Modifier.width(236.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(bottom = 20.dp)) {
+                                if (!keyboardVisible) LibraryHeading(compact = true, onNew = ::newDream)
+                                Controls()
+                            }
+                            Column(Modifier.weight(1f)) {
+                                LibraryEntries(results, state.selectedId, query.isNotBlank() || filter != "All" || bookmarks || dates,
+                                    compact = true, onClear = { query = ""; filter = "All"; bookmarks = false; dates = false }, onOpen = ::openDream)
+                            }
+                        }
+                    } else {
+                        Controls()
+                        LibraryEntries(results, state.selectedId, query.isNotBlank() || filter != "All" || bookmarks || dates,
+                            onClear = { query = ""; filter = "All"; bookmarks = false; dates = false }, onOpen = ::openDream)
+                    }
+                    1 -> PatternPages(state.entries) { pattern -> query = "\"$pattern\""; tab = 0; filter = "All"; bookmarks = false; dates = false }
+                    2 -> DictionaryPages(state, model) { name -> query = "\"$name\""; tab = 0; filter = "All"; bookmarks = false; dates = false }
+                }
+            }
         }
     }
-}
-
-@Composable
-private fun DreamIndexRow(dream: DreamEntry, onOpen: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(dream.title.ifBlank { "Untitled dream" }, Modifier.weight(1f), fontFamily = DiarySerif, fontSize = 21.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Ink)
-            if (dream.bookmarked) Icon(DreamIcons.Bookmark, "Bookmarked", tint = Cover, modifier = Modifier.padding(start = 10.dp).size(17.dp))
-        }
-        if (dream.body.isNotBlank()) Text(dream.body.replace('\u000C', '\n').replace(Regex("\\s+"), " "), Modifier.padding(top = 6.dp), maxLines = 2,
-            overflow = TextOverflow.Ellipsis, fontSize = 14.sp, color = Pencil)
-        Text(listOfNotNull(when (dream.lucid) { true -> "Lucid"; false -> "Non-lucid"; null -> null },
-            if (dream.audio.isNotEmpty()) "${dream.audio.size} recordings" else null,
-            if (dream.hasDrawing) "Sketch" else null).joinToString(" · "),
-            Modifier.padding(top = 6.dp), fontSize = 11.sp, color = Pencil)
-    }
-    HorizontalDivider(color = Hairline)
 }
 
 @Composable

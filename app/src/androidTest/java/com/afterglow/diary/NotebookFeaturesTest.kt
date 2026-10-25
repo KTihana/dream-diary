@@ -3,6 +3,7 @@ package com.afterglow.diary
 import android.Manifest
 import android.os.SystemClock
 import androidx.compose.ui.test.*
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -38,6 +39,7 @@ class NotebookFeaturesTest {
     }
     @Test fun searchDictionaryBookmarksContinuationAndSketchSurviveRecreation() {
         ready()
+        captureLibraryIfRequested()
         app.onNodeWithContentDescription("A new dream").performClick()
         val title = "Paper ship " + java.util.UUID.randomUUID().toString().take(8)
         app.onNodeWithTag("dream-title").performTextReplacement(title)
@@ -86,6 +88,34 @@ class NotebookFeaturesTest {
             assertEquals("A little paper ship sailed through the blue door.\u000CThe second sheet is still the same dream.", current.body)
             assertEquals(1, current.drawings.single().strokes.size)
         }
+    }
+
+    /** Optional native captures, using the existing navigation flow and emulator-only sample entries. */
+    private fun captureLibraryIfRequested() {
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("captureLibrary") != "true") return
+        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        val directory = instrumentation.targetContext.getExternalFilesDir("screenshots")!!.apply { mkdirs() }
+        fun capture(name: String) {
+            app.waitForIdle()
+            val image = app.onNode(isDialog()).captureToImage()
+            val bitmap = image.asAndroidBitmap()
+            java.io.File(directory, name).outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        app.onNodeWithContentDescription("All dreams").performClick()
+        capture("your-dreams-portrait-1.5.1.png")
+        rotate(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        capture("your-dreams-landscape-1.5.1.png")
+        rotate(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, android.content.res.Configuration.ORIENTATION_PORTRAIT)
+        app.activityRule.scenario.onActivity { activity ->
+            val model = ViewModelProvider(activity)[DiaryViewModel::class.java]
+            model.preferences(model.state.value.preferences.copy(night = true))
+        }
+        capture("your-dreams-night-1.5.1.png")
+        app.activityRule.scenario.onActivity { activity ->
+            val model = ViewModelProvider(activity)[DiaryViewModel::class.java]
+            model.preferences(model.state.value.preferences.copy(night = false))
+        }
+        app.onNodeWithContentDescription("Close").performClick()
     }
 
     @Test fun quickCaptureIntentStartsABlankDream() {

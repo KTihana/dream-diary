@@ -17,7 +17,7 @@ A native Kotlin / Jetpack Compose dream diary. Full-screen ivory paper, Lora typ
 
 The **Dreams button** opens four sections. **Practice** is also available directly in the bottom toolbar:
 
-- **Index:** dreams grouped by night, with previews, lucid status, sketch and recording indicators. Search titles, text, symbols, people, places, and dates. All search terms must match; quotation marks keep an exact phrase together. Filter by lucid / non-lucid, bookmarks, and inclusive date range.
+- **Dreams:** entries grouped by month on warm paper cards, with a date gutter, serif titles and text previews. Lucid dreams have a quiet lavender tint; bookmarks, drawings, voice notes and the last-opened entry are marked. The pen button starts a new dream. In landscape, search and filters sit beside compact previews. Search titles, text, symbols, people, places, and dates. All search terms must match; quotation marks keep an exact phrase together. Filter by lucid / non-lucid, bookmarks, and inclusive date range.
 - **Patterns:** recorded dreams and nights, lucid percentage among dreams with a known lucid choice, an eight-week activity chart, repeated symbols, people and places, and average optional lucid ratings. Tap a recurring item to find its dreams. Empty pages are excluded from these statistics.
 - **Symbols:** your personal dream dictionary. Write and edit your own meanings and open the dreams linked to a symbol. Removing a dictionary meaning keeps the dreams.
 - **Practice:** lucid-dreaming routines, reminders, intentions, morning review, history, optional nighttime tools, and tips with research links. Also available in **Notebook options → Lucid practice & tips**.
@@ -53,7 +53,7 @@ The app has no account, cloud sync, app lock, backup, export, or AI feature. Dre
 
 ## Install on your phone
 
-The installable developer build is [Dream Diary 1.5.0](https://github.com/KTihana/dream-diary/releases/download/v1.5.0/Dream-Diary-1.5.0.apk). Transfer the APK to an Android phone running Android 8.0 or newer, open it in Files and tap Install. Android may ask you to allow installation from that Files app. See the [short installation guide](dist/INSTALL.md).
+The installable developer build is [Dream Diary 1.5.1](https://github.com/KTihana/dream-diary/releases/download/v1.5.1/Dream-Diary-1.5.1.apk). Transfer the APK to an Android phone running Android 8.0 or newer, open it in Files and tap Install. Android may ask you to allow installation from that Files app. See the [short installation guide](dist/INSTALL.md).
 
 A new installation starts with a blank notebook. The app remembers your last-opened dream across app restarts, as well as your entries and settings. The APK is signed with this machine's Android development key and updates earlier APKs signed with the same key without deleting their notebooks. It is a developer build for direct installation; store distribution needs production signing.
 
@@ -76,7 +76,9 @@ The packaging task builds the app and copies its signed APK into `dist`. The pac
 ANDROID_SERIAL=your-test-device ./gradlew :app:connectedDebugAndroidTest
 ```
 
-Version 1.5.0 passes all 30 JVM tests and Android lint with zero errors. Eleven distinct Android device flows pass, including direct page drawing, rendered eraser transparency, colors/thickness, undo/redo, placement, rotation, opacity, saving/recreation, notebook editing, pagination and text alignment. Six voice flows cover English/Croatian, waveform/lifecycle behavior, Erase all, short phrase endpoints followed by silence timeouts, and continuous segments. Both pause flows accumulate the exact words, remain open until manual finish, and do not restart after finishing. Phrase restarts reuse the speech-provider connection. Finish and the meter scroll into view together on short screens. Voice flows were rechecked after their fixes; the test fixture allows time for the initial ready state to be observed during scrolling. An upgrade from 1.4.4 preserved an earlier title, Croatian text and legacy sketch. Speech fixtures supply words and sound levels; physical-phone speech accuracy and provider availability remain untested. See [validation details](dist/validation.json).
+Version 1.5.1 refreshes the library presentation. Its packaged APK passes Android lint with zero errors and the existing search, dictionary, bookmark, page-continuation, drawing and recreation device flow. Native screenshots verify portrait, landscape and night mode using example entries on an Android 16 / API 36 emulator. The APK updates 1.5.0 with the same signing key. The broader 1.5.0 tests below were not rerun for this visual change. See [current validation details](dist/validation.json).
+
+Version 1.5.0 passes all 30 JVM tests and Android lint with zero errors. Eleven distinct Android device flows pass, including direct page drawing, rendered eraser transparency, colors/thickness, undo/redo, placement, rotation, opacity, saving/recreation, notebook editing, pagination and text alignment. Six voice flows cover English/Croatian, waveform/lifecycle behavior, Erase all, short phrase endpoints followed by silence timeouts, and continuous segments. Both pause flows accumulate the exact words, remain open until manual finish, and do not restart after finishing. Phrase restarts reuse the speech-provider connection. Finish and the meter scroll into view together on short screens. Voice flows were rechecked after their fixes; the test fixture allows time for the initial ready state to be observed during scrolling. An upgrade from 1.4.4 preserved an earlier title, Croatian text and legacy sketch. Speech fixtures supply words and sound levels; physical-phone speech accuracy and provider availability remain untested.
 
 Version 1.4.4 passes all 25 JVM tests and Android lint with zero errors. Four targeted device flows cover English/Croatian dictation and waveform behavior, plus **Erase all** while listening, reviewing and finishing transcription. The clear flow checks portrait/landscape, an empty draft after recreation and pending-result delay, successful restart, preservation of the existing dream title/body, and appending only the new Croatian take. Native screenshots show the clear action and reset state. The test speech service supplies example words, levels and a delayed final result; physical-phone acoustic accuracy was not tested.
 
@@ -98,6 +100,10 @@ The APK signature and declared Android version compatibility are verified. The G
 
 Screenshots use example dreams on a development emulator. New installations open with a blank page.
 
+![Your dreams in portrait](screenshots/your-dreams-portrait-1.5.1.png)
+![Your dreams in landscape](screenshots/your-dreams-landscape-1.5.1.png)
+![Your dreams in night mode](screenshots/your-dreams-night-1.5.1.png)
+
 ![Drawing directly on a lucid dream page](screenshots/drawing-tools-portrait-1.5.0.png)
 ![A drawing saved in the diary](screenshots/drawing-in-diary-1.5.0.png)
 ![Drawing tools in landscape](screenshots/drawing-tools-landscape-1.5.0.png)
@@ -117,6 +123,7 @@ The earlier [Figma screens and Canva direction board](design/README.md) establis
 - `AfterglowApp.kt`: paper drawing, responsive notebook, text measurement/pagination, page-turn animation, menus, and date picker.
 - `PaperRuling.kt`: text-aligned notebook rules, including the editor's scrolling above the keyboard.
 - `FeaturePanels.kt`: index, patterns, personal dictionary, lucid details, appearance, and recall preferences.
+- `DreamLibraryDesign.kt`: paper entry previews, date typography, search, filters, and library navigation.
 - `PageDrawing.kt`: editable transparent vector layers, pen/highlighter/eraser, movement and transforms, drawing controls, and undo/redo.
 - `VoicePanel.kt` / `DictationWaveform.kt`: microphone recording, playback, live transcription with a sound-level envelope, permission/lifecycle handling.
 - `RecallReminder.kt`: daily reminder receiver, capture widget, and Quick Settings tile.
