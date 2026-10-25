@@ -1,6 +1,6 @@
 # Install Dream Diary on Android
 
-1. [Download Dream Diary 1.5.1](https://github.com/KTihana/dream-diary/releases/download/v1.5.1/Dream-Diary-1.5.1.apk) on your Android phone (Android 8.0 or newer).
+1. [Download Dream Diary 1.5.2](https://github.com/KTihana/dream-diary/releases/download/v1.5.2/Dream-Diary-1.5.2.apk) on your Android phone (Android 8.0 or newer).
 2. Open the APK in your phone's Files app. If Android asks, allow that app to install unknown apps, then tap Install.
 3. Open **Dream Diary** from your launcher. A new installation starts with your own blank notebook.
 

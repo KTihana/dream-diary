@@ -191,10 +191,11 @@ class NotebookFeaturesTest {
 
     @Test fun audioAppearanceAndRecallSettingsAreFunctional() {
         ready()
+        captureSettingsIfRequested()
         app.onNodeWithContentDescription("A new dream").performClick()
         val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
         instrumentation.uiAutomation.grantRuntimePermission(instrumentation.targetContext.packageName, Manifest.permission.RECORD_AUDIO)
-        option("Record or dictate")
+        app.onNodeWithContentDescription("Speak your dream").performClick()
         app.onNodeWithTag("record-audio").performClick()
         SystemClock.sleep(1500)
         app.onNodeWithTag("record-audio").performClick()
@@ -210,21 +211,61 @@ class NotebookFeaturesTest {
             try { media.setDataSource(file.absolutePath); assertTrue(media.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)!!.toLong() > 0) }
             finally { media.release() }
         }
-        option("Make it yours")
-        app.onNodeWithText("Dotted").performClick()
-        app.onNodeWithText("Handwritten").performClick()
+        option("Settings")
+        chooseSetting("paper", "Dotted")
+        chooseSetting("font", "Handwritten")
+        chooseSetting("marker", "Rose")
+        app.onNodeWithTag("settings-size-larger").performScrollTo().performClick()
         app.onNodeWithTag("night-paper").performScrollTo().performClick().assertIsOn()
         app.onNodeWithContentDescription("Close").performClick()
         app.activityRule.scenario.recreate()
         ready()
-        option("Make it yours")
+        option("Settings")
+        app.onNodeWithTag("settings-paper").assertTextContains("Dotted")
+        app.onNodeWithTag("settings-font").assertTextContains("Handwritten")
+        app.onNodeWithTag("settings-marker").assertTextContains("Rose")
+        app.activityRule.scenario.onActivity { assertEquals(20, ViewModelProvider(it)[DiaryViewModel::class.java].state.value.preferences.textSize) }
         app.onNodeWithTag("night-paper").performScrollTo().assertIsOn().performClick()
-        app.onNodeWithText("Lined").performScrollTo().performClick()
-        app.onNodeWithText("Book").performClick()
-        app.onNodeWithContentDescription("Close").performClick()
-        option("Recall & reminders")
+        chooseSetting("paper", "Lined")
+        chooseSetting("font", "Book")
+        chooseSetting("marker", "Linen")
+        app.onNodeWithTag("settings-size-smaller").performScrollTo().performClick()
+        app.onNodeWithTag("settings-morning").performScrollTo().performClick()
         app.onNodeWithText("Another prompt").performClick()
         app.onNodeWithText(RecallPrompts[1]).assertExists()
+        app.onNodeWithContentDescription("Back to settings").performClick()
+        app.onNodeWithTag("notebook-settings").assertExists()
+        app.onNodeWithTag("settings-reality").performScrollTo().performClick()
+        app.onNodeWithTag("practice-reminders").assertExists()
+        app.onNodeWithContentDescription("Back to settings").performClick()
+        app.onNodeWithTag("notebook-settings").assertExists()
+        app.onNodeWithContentDescription("Close").performClick()
+    }
+
+    private fun chooseSetting(name: String, value: String) {
+        app.onNodeWithTag("settings-$name").performScrollTo().performClick()
+        app.onNodeWithTag("settings-$name-$value").performClick()
+    }
+
+    private fun captureSettingsIfRequested() {
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("captureSettings") != "true") return
+        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        val directory = instrumentation.targetContext.getExternalFilesDir("screenshots")!!.apply { mkdirs() }
+        fun capture(name: String) {
+            app.waitForIdle()
+            val bitmap = app.onNode(isDialog()).captureToImage().asAndroidBitmap()
+            java.io.File(directory, name).outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        app.onNodeWithContentDescription("Notebook options").performClick()
+        app.onNodeWithText("Settings").performClick()
+        capture("settings-portrait-1.5.2.png")
+        rotate(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+        capture("settings-landscape-1.5.2.png")
+        rotate(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, android.content.res.Configuration.ORIENTATION_PORTRAIT)
+        app.onNodeWithTag("night-paper").performScrollTo().performClick()
+        app.onNodeWithTag("settings-paper-preview").performScrollTo()
+        capture("settings-night-1.5.2.png")
+        app.onNodeWithTag("night-paper").performScrollTo().performClick()
         app.onNodeWithContentDescription("Close").performClick()
     }
 }

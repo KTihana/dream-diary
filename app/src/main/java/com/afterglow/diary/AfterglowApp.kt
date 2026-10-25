@@ -172,6 +172,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
     var showDelete by rememberSaveable { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
     var panel by rememberSaveable { mutableStateOf<String?>(null) }
+    var recallParent by rememberSaveable { mutableStateOf<String?>(null) }
     var practiceRoute by rememberSaveable { mutableStateOf("home") }
     var practiceDate by rememberSaveable { mutableStateOf<String?>(null) }
     var practiceLaunch by rememberSaveable { mutableIntStateOf(0) }
@@ -183,6 +184,7 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
     val hasNext = writingPage < writingPages - 1 || state.index < state.entries.lastIndex
     fun openPanel(name: String) {
         focus.clearFocus(); autoRecord = false
+        recallParent = null
         if (name == "sketch") { drawingMode = true; drawingEditor.expanded = true; panel = null; return }
         drawingMode = false
         if (name == "practice") { practiceRoute = "home"; practiceDate = null; practiceLaunch++ }
@@ -265,7 +267,8 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(Icons.Outlined.MoreVert, "Notebook options", tint = Ink, modifier = Modifier.size(23.dp).graphicsLayer { rotationZ = 90f })
                     }
-                    DropdownMenu(menuExpanded, { menuExpanded = false }, containerColor = ControlPaper) {
+                    DropdownMenu(menuExpanded, { menuExpanded = false }, modifier = Modifier.width(260.dp).testTag("notebook-menu"),
+                        containerColor = ControlPaper, shape = RoundedCornerShape(20.dp), tonalElevation = 0.dp) {
                         NotebookMenu(entry.bookmarked,
                             { name -> menuExpanded = false; openPanel(name) },
                             { menuExpanded = false; model.toggleBookmark() },
@@ -408,8 +411,13 @@ private fun NotebookScreen(state: DiaryState, model: DiaryViewModel, captureRequ
         "details" -> DetailsPanel(entry, model) { panel = null }
         "voice" -> VoicePanel(entry, model, { panel = null }, autoRecord)
         "sketch" -> LaunchedEffect(Unit) { panel = null; drawingMode = true }
-        "appearance" -> AppearancePanel(state.preferences, model::preferences) { panel = null }
-        "recall" -> RecallPanel(state.preferences, model::preferences) { panel = null }
+        "settings" -> NotebookSettingsPanel(state.preferences, model::preferences,
+            onMorning = { openPanel("recall"); recallParent = "settings" },
+            onReality = { openPanel("settings-reality") }) { panel = null }
+        "settings-reality" -> NotebookReminderPanel(model, onBack = { panel = "settings" },
+            onMorning = { openPanel("recall"); recallParent = "settings-reality" }) { panel = null }
+        "recall" -> RecallPanel(state.preferences, model::preferences,
+            onBack = recallParent?.let { parent -> ({ panel = parent; recallParent = null }) }) { panel = null; recallParent = null }
     } }
     if (showDelete) {
         AlertDialog(
@@ -701,15 +709,18 @@ private fun LucidityNote(lucid: Boolean?, onChange: (Boolean) -> Unit, enabled: 
 @Composable
 private fun NotebookMenu(bookmarked: Boolean, onPanel: (String) -> Unit, onBookmark: () -> Unit,
     onPage: () -> Unit, onDelete: () -> Unit) {
-    DropdownMenuItem(text = { Text("Lucid practice & tips") }, onClick = { onPanel("practice") })
-    DropdownMenuItem(text = { Text("Record or dictate") }, onClick = { onPanel("voice") })
-    DropdownMenuItem(text = { Text("Draw on this page") }, onClick = { onPanel("sketch") })
-    DropdownMenuItem(text = { Text("Dream details") }, onClick = { onPanel("details") })
-    DropdownMenuItem(text = { Text(if (bookmarked) "Remove bookmark" else "Bookmark this dream") }, onClick = onBookmark)
-    DropdownMenuItem(text = { Text("Continue on a new page") }, onClick = onPage)
-    HorizontalDivider()
-    DropdownMenuItem(text = { Text("Make it yours") }, onClick = { onPanel("appearance") })
-    DropdownMenuItem(text = { Text("Recall & reminders") }, onClick = { onPanel("recall") })
-    HorizontalDivider()
-    DropdownMenuItem(text = { Text("Delete this dream") }, onClick = onDelete)
+    Text("THIS DREAM", Modifier.padding(start = 18.dp, top = 8.dp, bottom = 6.dp), fontSize = 10.sp, letterSpacing = 1.2.sp, color = Pencil)
+    DropdownMenuItem(text = { Text("Dream details", fontSize = 14.sp) },
+        leadingIcon = { Icon(DreamIcons.Info, null, Modifier.size(19.dp), tint = Pencil) }, onClick = { onPanel("details") })
+    DropdownMenuItem(text = { Text(if (bookmarked) "Remove bookmark" else "Bookmark this dream", fontSize = 14.sp) },
+        leadingIcon = { Icon(DreamIcons.Bookmark, null, Modifier.size(19.dp), tint = Pencil) }, onClick = onBookmark)
+    DropdownMenuItem(text = { Text("Continue on a new page", fontSize = 14.sp) },
+        leadingIcon = { Icon(DreamIcons.Book, null, Modifier.size(19.dp), tint = Pencil) }, onClick = onPage)
+    HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 6.dp), color = Hairline)
+    DropdownMenuItem(text = { Text("Settings", fontSize = 14.sp) },
+        leadingIcon = { Icon(DreamIcons.Settings, null, Modifier.size(19.dp), tint = Pencil) }, onClick = { onPanel("settings") })
+    HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 6.dp), color = Hairline)
+    DropdownMenuItem(text = { Text("Delete this dream", fontSize = 14.sp) },
+        leadingIcon = { Icon(Icons.Outlined.Delete, null, Modifier.size(19.dp)) },
+        colors = MenuDefaults.itemColors(textColor = Pencil, leadingIconColor = Pencil), onClick = onDelete)
 }

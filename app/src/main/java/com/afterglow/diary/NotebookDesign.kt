@@ -90,6 +90,7 @@ internal val Hairline: Color @Composable get() = Ink.copy(alpha = .09f)
 }
 
 internal object DreamIcons {
+    val Settings by lazy { symbol("Settings") { moveTo(3f,6f); lineTo(8f,6f); moveTo(12f,6f); lineTo(21f,6f); moveTo(8f,3f); lineTo(8f,9f); lineTo(12f,9f); lineTo(12f,3f); close(); moveTo(3f,18f); lineTo(14f,18f); moveTo(18f,18f); lineTo(21f,18f); moveTo(14f,15f); lineTo(14f,21f); lineTo(18f,21f); lineTo(18f,15f); close() } }
     val Eraser by lazy { symbol("Eraser") { moveTo(3f,14f); lineTo(12f,4f); lineTo(21f,12f); lineTo(13f,21f); lineTo(9f,21f); close(); moveTo(7f,10f); lineTo(17f,18f); moveTo(13f,21f); lineTo(22f,21f) } }
     val Highlighter by lazy { symbol("Highlighter") { moveTo(8f,14f); lineTo(15f,3f); lineTo(21f,7f); lineTo(14f,18f); close(); moveTo(8f,14f); lineTo(5f,19f); lineTo(10f,21f); lineTo(14f,18f); moveTo(3f,23f); lineTo(20f,23f) } }
     val Move by lazy { symbol("Move") { moveTo(12f,2f); lineTo(12f,22f); moveTo(2f,12f); lineTo(22f,12f); moveTo(8f,6f); lineTo(12f,2f); lineTo(16f,6f); moveTo(8f,18f); lineTo(12f,22f); lineTo(16f,18f); moveTo(6f,8f); lineTo(2f,12f); lineTo(6f,16f); moveTo(18f,8f); lineTo(22f,12f); lineTo(18f,16f) } }

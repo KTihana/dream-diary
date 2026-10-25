@@ -1,24 +1,25 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "package": "com.afterglow.diary",
-  "artifact": "Dream-Diary-1.5.1.apk",
-  "sha256": "0d56d3a1d096f6823807fb6fc5cc78db15727e03ad484c92f67b8d3dfb0f1263",
-  "bytes": 13276243,
+  "artifact": "Dream-Diary-1.5.2.apk",
+  "sha256": "e58cc381fc8c6fe588631abcd7f3d20ad880811f9a5321b340d5d5904e72531b",
+  "bytes": 12595382,
   "build": "signed debug/developer APK",
   "minimum_android": "8.0 / API 26",
   "validation": {
     "lint_errors": 0,
-    "targeted_device_flows_passed": 1,
+    "targeted_device_flows_passed": 2,
     "test_device": "Android 16 / API 36 emulator, 1080 \u00d7 2400",
     "tests": [
+      "com.afterglow.diary.NotebookFeaturesTest#audioAppearanceAndRecallSettingsAreFunctional",
       "com.afterglow.diary.NotebookFeaturesTest#searchDictionaryBookmarksContinuationAndSketchSurviveRecreation"
     ],
-    "upgrade": "Installed over 1.5.0 using the same development signing key.",
-    "notes": "Visual library update. Native portrait, landscape and night-mode screenshots use six fictional emulator-only entries. The existing flow checks search, lucid/bookmark filters, dictionary links, page continuation, drawing, and recreation. The broader 1.5.0 baseline of 30 JVM tests and 11 device flows was not rerun for this visual change. APK signature verified; test APK and its provider selection removed after validation."
+    "upgrade": "Installed over 1.5.1 using the same development signing key.",
+    "notes": "Settings/menu navigation update. Tests exercise microphone audio through its dedicated button, selecting paper/font/marker/text size, night paper, persistence after activity recreation, morning and reality-check routes with return navigation, plus the existing library, details, bookmark, continuation and drawing flow. Native settings screenshots cover portrait, landscape and night mode. The broader 1.5.0 baseline of 30 JVM tests and 11 device flows was not rerun. APK signature verified."
   },
   "screenshots": [
-    "screenshots/your-dreams-portrait-1.5.1.png",
-    "screenshots/your-dreams-landscape-1.5.1.png",
-    "screenshots/your-dreams-night-1.5.1.png"
+    "screenshots/settings-portrait-1.5.2.png",
+    "screenshots/settings-landscape-1.5.2.png",
+    "screenshots/settings-night-1.5.2.png"
   ]
 }

@@ -59,7 +59,8 @@ import java.util.Locale
 
 @Composable
 internal fun NotebookPanel(title: String, onClose: () -> Unit, onDismiss: () -> Unit = onClose,
-    onBack: (() -> Unit)? = null, background: Color? = null, content: @Composable ColumnScope.() -> Unit) {
+    onBack: (() -> Unit)? = null, background: Color? = null, backLabel: String = "Back to practice",
+    content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         val view = LocalView.current
         val night = LocalNotebookPreferences.current.night
@@ -78,7 +79,7 @@ internal fun NotebookPanel(title: String, onClose: () -> Unit, onDismiss: () -> 
                 Column(Modifier.widthIn(max = 860.dp).fillMaxSize().padding(horizontal = 22.dp)) {
                     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
-                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to practice", tint = Accent, modifier = Modifier.size(21.dp))
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, backLabel, tint = Accent, modifier = Modifier.size(21.dp))
                         }
                         Text(title, Modifier.weight(1f), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
                         IconButton(onClick = onClose, modifier = Modifier.size(44.dp).padding(6.dp).background(Ink.copy(alpha = .06f), CircleShape)) {
@@ -311,39 +312,8 @@ internal fun DetailsPanel(entry: DreamEntry, model: DiaryViewModel, onClose: () 
 }
 
 @Composable
-internal fun AppearancePanel(settings: NotebookPreferences, onChange: (NotebookPreferences) -> Unit, onClose: () -> Unit) {
-    NotebookPanel("Appearance", onClose) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            PageHeading("Appearance", "Paper, type and night mode.")
-            PanelLabel("Paper")
-            Choices(listOf("Lined", "Dotted", "Plain"), settings.ruling) { onChange(settings.copy(ruling = it)) }
-            PanelLabel("Writing")
-            Choices(listOf("Book", "Handwritten", "Simple"), settings.font) { onChange(settings.copy(font = it)) }
-            Choices(listOf("16", "18", "20", "22"), settings.textSize.toString()) { onChange(settings.copy(textSize = it.toInt())) }
-            Text("A quiet place to keep the things you almost forgot.", Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                fontFamily = when (settings.font) { "Handwritten" -> Handwritten; "Simple" -> androidx.compose.ui.text.font.FontFamily.SansSerif; else -> DiarySerif },
-                fontSize = settings.textSize.sp, color = Ink, lineHeight = (settings.textSize + 14).sp)
-            PanelLabel("Page marker")
-            Text("The colour of bookmarked dreams.", color = Pencil, fontSize = 13.sp)
-            Choices(listOf("Linen", "Rose", "Midnight"), settings.cover) { onChange(settings.copy(cover = it)) }
-            Row(Modifier.fillMaxWidth().padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Night paper", fontWeight = FontWeight.Medium, fontSize = 17.sp, color = Ink)
-                    Text("Dim ink and paper for sleepy eyes", color = Pencil, fontSize = 12.sp)
-                }
-                Switch(settings.night, { onChange(settings.copy(night = it)) }, modifier = Modifier.testTag("night-paper"))
-            }
-        }
-    }
-}
-@Composable private fun Choices(options: List<String>, selected: String, onSelect: (String) -> Unit) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { options.forEach {
-        FilterChip(selected == it, { onSelect(it) }, label = { Text(it) })
-    } }
-}
-
-@Composable
-internal fun RecallPanel(settings: NotebookPreferences, onChange: (NotebookPreferences) -> Unit, onClose: () -> Unit) {
+internal fun RecallPanel(settings: NotebookPreferences, onChange: (NotebookPreferences) -> Unit,
+    onBack: (() -> Unit)? = null, onClose: () -> Unit) {
     val context = LocalContext.current
     var prompt by rememberSaveable { mutableIntStateOf(0) }
     var hour by rememberSaveable { mutableStateOf(settings.reminderHour.toString().padStart(2, '0')) }
@@ -354,7 +324,7 @@ internal fun RecallPanel(settings: NotebookPreferences, onChange: (NotebookPrefe
         denied = !granted
         if (granted) onChange(latest.copy(reminder = true))
     }
-    NotebookPanel("Morning reminders", onClose) {
+    NotebookPanel("Morning reminders", onClose, onDismiss = onBack ?: onClose, onBack = onBack, backLabel = "Back to settings") {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 28.dp)) {
             PageHeading("Morning recall")
             Text("Stay still for a moment. Start with one image, then follow it backwards. A fragment is enough.", color = Pencil, lineHeight = 24.sp)
